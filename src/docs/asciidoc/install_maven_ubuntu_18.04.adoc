@@ -1,0 +1,20 @@
+= Install Maven 3.6 in Ubuntu 18.04
+
+Below are the steps to install maven in ubuntu 18.04 from tar file instead of default maven version for apt repository.
+
+* Download latest maven distribution from Maven download URL(https://maven.apache.org/download.cgi[from here] ).
+
+	$ wget http://mirrors.estointernet.in/apache/maven/maven-3/3.6.0/binaries/apache-maven-3.6.0-bin.tar.gz
+
+* Extract distribution.
+
+	$ tar -xzvf apache-maven-3.6.0-bin.tar.gz
+
+* Move the directory to `/user/local/lib`
+
+	$  sudo mv apache-maven-3.6.0 /usr/local/lib/
+
+* Update `mvn` alternatives.
+
+	$ sudo update-alternatives --install /usr/bin/mvn maven \
+		     /usr/local/lib/apache-maven-3.6.0/bin/mvn 1001

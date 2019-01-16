@@ -3,3 +3,8 @@
 
 # Ada Library Information
 *.ali
+.project
+target
+.classpath
+.settings
+apt_generated

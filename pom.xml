@@ -55,10 +55,10 @@
 						</execution>
 					</executions>
 					<configuration>
-						<sourceDirectory>${basedir}/src/docs/asciidoc</sourceDirectory>
+						<sourceDirectory>${basedir}/src/asciidoc</sourceDirectory>
 						<headerFooter>true</headerFooter>
-						<imagesDir>${basedir}/src/docs/asciidoc/images</imagesDir>
-						<outputDirectory>${basedir}/documents</outputDirectory>
+						<imagesDir>${basedir}/src/asciidoc/images</imagesDir>
+						<outputDirectory>${basedir}/docs</outputDirectory>
 					</configuration>
 					<dependencies>
 						<dependency>

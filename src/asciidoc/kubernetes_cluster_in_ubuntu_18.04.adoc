@@ -1,0 +1,53 @@
+= Kubernetes MultiNode cluster on VirtualBox
+
+A step by step description of bringing up kubernetes cluster using VirtualBox 6.0 with ubuntu 18.04 server.
+
+== VirtualBox setup
+
+Create two VMs k8s-master and k8s-s1 as shown in below diagram. 
+
+[ditaa]
+----
+    +----------------+                       +----------------+
+    |                |                       |                |
+    |   K8s-master   |                       |   K8s-s1       |
+    |                |                       |                |
+    | IF2        IF1 |                       | IF1        IF2 |
+    +--+----------+--+                       +---+---------+--+
+       |          |                              |         |
+       |          |       Host only Network      |         |
+       |          +------------------------------+         |
+      NAT                  192.168.56.0/24               NAT
+
+
+                          VirtualBox VM setup
+----
+
+=== VM hardware configuration.
+
+* Kubernetes master/controller node hardware requirement
+[options="k8s-master",cols="1,1"]
+|===
+|Component   | Value (min) 
+//-------------
+|Processor   | 2 core   
+|RAM         | 4GB   
+|Network Adapter-1      | Host only network   
+|Network Adapter-2      | NAT   
+|===
+
+* kubernetes worker/slave node hardware requirement
+[options="k8s-master",cols="1,1"]
+|===
+|Component   | Value (min)
+//-------------
+|Processor   | 1 core   
+|RAM         | 2GB   
+|Network Adapter-1      | Host only network   
+|Network Adapter-2      | NAT   
+|===
+
+IMPORTANT: while creating disk partition do not select partition with LVM.
+
+
+

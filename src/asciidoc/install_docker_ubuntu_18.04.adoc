@@ -43,9 +43,9 @@ $ sudo systemctl status docker
 
 * Verify if user is added is added to docker group by listing the groups the user is added to.
 ----
-$ id -aG ${USER}
+$ id -nG ${USER}
 ----
 * Logout and login to session.
 ----
-su -u ${USER}
+su - ${USER}
 ----

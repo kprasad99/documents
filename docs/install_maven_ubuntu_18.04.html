@@ -429,6 +429,7 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 #footer-text{color:rgba(0,0,0,.6);font-size:.9em}}
 @media amzn-kf8{#header,#content,#footnotes,#footer{padding:0}}
 </style>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 <style>
 /* Stylesheet for CodeRay to match GitHub theme | MIT License | http://foundation.zurb.com */
 /*pre.CodeRay {background-color:#f7f7f8;}*/
@@ -533,34 +534,33 @@ table.CodeRay td.code>pre{padding:0}
 <ul>
 <li>
 <p>Download latest maven distribution from Maven download URL(<a href="https://maven.apache.org/download.cgi">from here</a> ).</p>
-<div class="literalblock">
+<div class="listingblock">
 <div class="content">
-<pre>$ wget http://mirrors.estointernet.in/apache/maven/maven-3/3.6.0/binaries/apache-maven-3.6.0-bin.tar.gz</pre>
+<pre class="CodeRay highlight"><code data-lang="bash">$ wget http://mirrors.estointernet.in/apache/maven/maven-3/3.6.0/binaries/apache-maven-3.6.0-bin.tar.gz</code></pre>
 </div>
 </div>
 </li>
 <li>
 <p>Extract distribution.</p>
-<div class="literalblock">
+<div class="listingblock">
 <div class="content">
-<pre>$ tar -xzvf apache-maven-3.6.0-bin.tar.gz</pre>
+<pre class="CodeRay highlight"><code data-lang="bash">$ tar -xzvf apache-maven-3.6.0-bin.tar.gz</code></pre>
 </div>
 </div>
 </li>
 <li>
 <p>Move the directory to <code>/user/local/lib</code></p>
-<div class="literalblock">
+<div class="listingblock">
 <div class="content">
-<pre>$  sudo mv apache-maven-3.6.0 /usr/local/lib/</pre>
+<pre class="CodeRay highlight"><code data-lang="bash">$  sudo mv apache-maven-3.6.0 /usr/local/lib/</code></pre>
 </div>
 </div>
 </li>
 <li>
 <p>Update <code>mvn</code> alternatives.</p>
-<div class="literalblock">
+<div class="listingblock">
 <div class="content">
-<pre>$ sudo update-alternatives --install /usr/bin/mvn maven \
-	     /usr/local/lib/apache-maven-3.6.0/bin/mvn 1001</pre>
+<pre class="CodeRay highlight"><code data-lang="bash">$ sudo update-alternatives --install /usr/bin/mvn maven /usr/local/lib/apache-maven-3.6.0/bin/mvn 1001</code></pre>
 </div>
 </div>
 </li>
@@ -569,7 +569,7 @@ table.CodeRay td.code>pre{padding:0}
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2019-01-17 01:23:26 IST
+Last updated 2019-01-22 23:16:37 IST
 </div>
 </div>
 </body>

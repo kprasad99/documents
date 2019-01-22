@@ -23,7 +23,7 @@ Create two VMs k8s-master and k8s-s1 as shown in below diagram.
                           VirtualBox VM setup
 ----
 
-=== VM hardware configuration.
+== VM hardware configuration.
 
 * Kubernetes master/controller node hardware requirement
 [options="k8s-master",cols="1,1"]
@@ -49,26 +49,27 @@ Create two VMs k8s-master and k8s-s1 as shown in below diagram.
 
 IMPORTANT: while creating disk partition do not select partition with LVM.
 
-=== Prepare Servers:
+== Prepare Servers
 	
 Execute the below step in both the VMs.
 
-===== Setup network.
+=== Setup network.
 
 * Shutdown the VMs.
 * Modify VM network, with Adapter 1 for Host Only Network and Adapter 2 for NAT.
 * Start VM.
 * Execute below command and note down the interfaces (generally for Virtual box VMs network interface will start with enp0s).
 +
-[source, shell]
+[source, shell,options="nowrap"]
 ----
 $ sudo ifconfig -a
 ----
 
-* Setup static network. Open file /etc/netplan/50-cloud-init.yaml and add below configuration.
+* Setup static network. 
 +
-*On k8s-master*
+Open file `/etc/netplan/50-cloud-init.yaml` and add below configuration.
 +
+.*k8s-master*
 [source, yaml]
 ----
 network:
@@ -82,8 +83,7 @@ network:
  version: 2
 ----
 +
-*On k8s-s1*
-+
+.*k8s-s1*
 [source, yaml]
 ----
 network:
@@ -99,81 +99,81 @@ network:
 
 * Reboot VMs.
 
-* Update Packages if any
-* Update apt sources.
+* Update Packages.
+** Update apt sources.
 +
-[source, bash]
+[source, shell,options="nowrap"]
 ----
 $ sudo apt update
 ----	
-* Install packages
+** Install packages
 +
-[source, bash]
+[source, shell,options="nowrap"]
 ----	
 $ sudo apt upgrade
 ----
 
-===== Install docker
+=== Install docker
 
 * Install utility packages
 +
-[source, bash]
+[source%autofit, shell,options="nowrap"]
 ----
 $ sudo apt install apt-transport-https ca-certificates curl software-properties-common
 ----
 * Add GPG key
 +
-[source, bash]
+[source, shell,options="nowrap"]
 ----
 $ curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
 ----
 * Add docker repository to apt sources.
 +
-[source, bash]
+[source%autofit, shell,options="nowrap"]
 ----
 $ sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu bionic stable"
 ----
 * Update apt sources and install docker
 +
-[source, bash]
+[source, shell,options="nowrap"]
 ----
 $ sudo apt update ; sudo apt install docker-ce
 ----
 * Verify docker service is started.
 +
-[source, bash]
+[source, shell,options="nowrap"]
 ----
 $ sudo systemctl status docker
 ----
 
-=== Install and configure kubernetes.
+== Install and configure kubernetes.
 
-==== General Installation
+=== General Installation
 
 Execute the below steps on both the VMs.
 
 . Add Kubernetes source gpg.
 +
-[source, bash]
+[source, shell,options="nowrap"]
 ----
 $ curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add
 ----
 . Next add kubernetes repository 
 +
-[source, bash]
+[source, shell,options="nowrap"]
 ----
 $ sudo apt-add-repository "deb http://apt.kubernetes.io/ kubernetes-xenial main"
 ----
-NOTE: Browese http://apt.kubernetes.io/ and search for the corresponding ubuntu version, since there was no kubernetes-bionic, installing kubernetes-xenial in my case.	
+NOTE: Browse http://apt.kubernetes.io/ and search for the corresponding ubuntu version, since there was no kubernetes-bionic, installing kubernetes-xenial in my case.	
 . Install `kubeadm`
 +
-[source, bash]
+[source, shell,options="nowrap"]
 ----
 $ sudo apt install kubeadm
 ----
 . Turn off swap
 +
-[source, bash]
+[source, shell,options="nowrap"]
 ----
 $ sudo swapoff -a
 ----	
@@ -183,41 +183,41 @@ IMPORTANT:  If 4 and 5 steps not followed, kubelet service will not start.
 	
 . Reboot VMs.
 
-==== Configure Master VM.
+=== Configure Master VM.
 
 . Initialize kubernetes master node by executing below command.
 +
-[source, bash]
+[source%autofit, shell,options="nowrap"]
 ----
 $ sudo kubeadm init --apiserver-advertise-address=192.168.56.10 \
 	 --pod-network-cidr=10.244.0.0/16
 ----
-. As output of above command shows to execute below command to enable kubectl command. Execute the below command.
+. As output of above command shows to execute below command, run below command to enable `kubectl` command. Execute the below command.
 +
-[source, bash]
+[source, shell,options="nowrap"]
 ----
 $ mkdir -p $HOME/.kube
 $ sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
 $ sudo chown $(id -u):$(id -g) $HOME/.kube/config
 ----	
 
-. Note down (copy to textpad) the kubeadm join command which needs to be executed on slave nodes to join to the cluster, we not run the command now, instead we will execute once dashboard is installed as we need dashboard to be installed on master node.
+. Note down (copy to textpad) the `kubeadm` join command which needs to be executed on slave nodes to join to the cluster, we not run the command now, instead we will execute once dashboard is installed as we need dashboard to be installed on master node.
 
 . Install pod network.
 +
-[source, bash]
+[source%autofit, shell,options="nowrap"]
 ----
 $ kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
 ----	
 . Verify all necessary pods are started
 +
-[source, bash]
+[source, shell,options="nowrap"]
 ----
 $ kubectl get pods --all-namespaces
 ----
 +
 .output:
-[source, bash]
+[source%autofit, shell,options="nowrap"]
 ----	
 NAMESPACE     NAME                                 READY   STATUS    RESTARTS   AGE
 kube-system   coredns-86c58d9df4-c68gd             1/1     Running   0          6m41s
@@ -230,23 +230,25 @@ kube-system   kube-proxy-882ms                     1/1     Running   0          
 kube-system   kube-scheduler-k8s-master            1/1     Running   0          5m54s
 ----
 
-===== Configure Kubernetes Dashboad.
+=== Configure Kubernetes Dashboad.
+
+==== Install Dashboard
 
 . Deploy dashboard.
 +
-[source, bash]
+[source%autofit, shell,options="nowrap"]
 ----
 $ kubectl create -f https://raw.githubusercontent.com/kubernetes/dashboard/master/aio/deploy/recommended/kubernetes-dashboard.yaml
 ----
 . Wait till dashboard pod is running.
 +
-[source, bash]
+[source, shell,options="nowrap"]
 ----
 $ kubectl get pods --all-namespaces
 ----
 +
 .output:
-[source, bash]
+[source%autofit, shell,options="nowrap"]
 ----	
 NAMESPACE     NAME                                   READY   STATUS    RESTARTS   AGE
 kube-system   coredns-86c58d9df4-c68gd               1/1     Running   0          11m
@@ -261,19 +263,19 @@ kube-system   kubernetes-dashboard-57df4db6b-5phx2   1/1     Running   0        
 ----
 . By default dashboard cannot be accessed from outside the VM, if you are using ubuntu desktop you can run below command and access the dashboard using proxy at url  http://localhost:8001/api/v1/namespaces/kube-system/services/https:kubernetes-dashboard:/proxy/
 +
-[source, bash]
+[source, shell,options="nowrap"]
 ----
 $ kubectl proxy
 ----
 4. However if you want dashboard be accessed from external ip editing kubernetes-dashboard service and changing type from ClusterIP to NodePort.
 +
-[source, bash]
+[source, shell,options="nowrap"]
 ----
 $ kubectl edit service kubernetes-dashboard -n kube-system
 ----
 The file content should something as shown below 
 +
-[source,yaml,indent=0]
+[source,yaml]
 ----
 apiVersion: v1
 kind: Service
@@ -297,20 +299,21 @@ spec:
   selector:
     k8s-app: kubernetes-dashboard
   sessionAffinity: None
-  type: NodePort
+  type: ClusterIP # <1>
 status:
   loadBalancer: {}
 ----
+<1> Replace *ClusterIP* with *NodePort*
 . Execute the below command and note down the port
 +
-[source, bash]
+[source, shell,options="nowrap"]
 ----	
 $ kubectl get service --all-namespaces
 ----
 +
 .output:
 +
-[source, bash]
+[source%autofit, shell,options="nowrap"]
 ----	
 NAMESPACE     NAME                   TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)         AGE
 default       kubernetes             ClusterIP   10.96.0.1        <none>        443/TCP         21m
@@ -324,23 +327,23 @@ NOTE: The dashboard port is *32608* in my case.
 +
 CAUTION: Port will be dynamically generated and port should be replaced from step 5.
 
-===== Create service Account and access dashboard.
+==== Create service Account and access dashboard.
 
 . Create a service account
 +
-[source, bash]
+[source, shell,options="nowrap"]
 ----
 $ kubectl create serviceaccount admin-user -n kube-system
 ----
 Verification : Below command should list the  admin-user account
 +
-[source, bash]
+[source, shell,options="nowrap"]
 ----
 $ kubectl get serviceaccount --all-namespaces
 ----
 . Create Cluster Role binding for the user.
 +
-[source, bash]
+[source%autofit, shell,options="nowrap"]
 ----
 $  kubectl create clusterrolebinding admin-user -n kube-system \
 	 --clusterrole=cluster-admin \
@@ -348,13 +351,15 @@ $  kubectl create clusterrolebinding admin-user -n kube-system \
 ----	
 . Generate the Bearer Token to access Dashboard
 +
-[source, bash]
+[source, shell,options="nowrap"]
 ----
-$ kubectl -n kube-system describe secret $(kubectl -n kube-system get secret | grep admin-user | awk '{print $1}')
+$ kubectl -n kube-system describe secret $(kubectl -n kube-system get secret | \
+	 grep admin-user | \
+	  awk '{print $1}')
 ----	
 +
 .output:
-[source, bash]
+[source%autofit, shell,options="nowrap"]
 ----
 Name:         admin-user-token-4nwz2
 Namespace:    kube-system
@@ -373,26 +378,27 @@ token:      eyJhbGciOiJSUzI1NiIsImtpZCI6IiJ9.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2V
 +
 Copy the token and paste it into token feild in the URL to Dashboard and login to dashboard.
 
-=== Configuration and joining slave node.
+=== Configuration slave node.
 
 . Now go to slave node and execute the join command previously saved when you were executing kubeadm on master.
 +
-[source, bash]
+[source%autofit, shell,options="nowrap"]
 ----
-$  kubeadm join 192.168.56.10:6443 --token t0j1zi.v5lojsnpjh9r0rbn --discovery-token-ca-cert-hash sha256:40b1142d9002003ab5b085776b8b8cba4a41ceaafab06429c49eaedc2b2939fa
+$  kubeadm join 192.168.56.10:6443 --token t0j1zi.v5lojsnpjh9r0rbn \
+	--discovery-token-ca-cert-hash sha256:40b1142d9002003ab5b085776b8b8cba4a41ceaafab06429c49eaedc2b2939fa
 ----
 +
 NOTE: The above command is sample, the values are dynamically generated.
 	
 . Now go back to master and execute the below command, you should be able to see slave node added.
 +
-[source, bash]
+[source, shell,options="nowrap"]
 ----
 $ kubectl get nodes
 ----
 +	
 .output:
-[source, bash]
+[source%autofit, shell,options="nowrap"]
 ----	
 NAME         STATUS   ROLES    AGE     VERSION
 k8s-master   Ready    master   56m     v1.13.2

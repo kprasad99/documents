@@ -429,6 +429,7 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 #footer-text{color:rgba(0,0,0,.6);font-size:.9em}}
 @media amzn-kf8{#header,#content,#footnotes,#footer{padding:0}}
 </style>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 <style>
 /* Stylesheet for CodeRay to match GitHub theme | MIT License | http://foundation.zurb.com */
 /*pre.CodeRay {background-color:#f7f7f8;}*/
@@ -526,16 +527,15 @@ table.CodeRay td.code>pre{padding:0}
 <h1>Installation and configuration of docker in Ubuntu 18.04</h1>
 <div id="toc" class="toc">
 <div id="toctitle">Table of Contents</div>
-<ul class="sectlevel1">
+<ul class="sectlevel2">
 <li><a href="#_install_docker_package">Install docker package</a></li>
 <li><a href="#_enable_docker_command_execution_without_sudo">Enable docker command execution without sudo.</a></li>
 </ul>
 </div>
 </div>
 <div id="content">
-<div class="sect1">
-<h2 id="_install_docker_package">Install docker package</h2>
-<div class="sectionbody">
+<div class="sect2">
+<h3 id="_install_docker_package"><a class="anchor" href="#_install_docker_package"></a>Install docker package</h3>
 <div class="paragraph">
 <p>Below are the steps to install docker in ubuntu 18.04</p>
 </div>
@@ -543,79 +543,57 @@ table.CodeRay td.code>pre{padding:0}
 <ul>
 <li>
 <p>First update existing packages.</p>
-</li>
-</ul>
-</div>
 <div class="listingblock">
 <div class="content">
-<pre>$ sudo apt update ; sudo apt upgrade</pre>
+<pre class="CodeRay highlight nowrap"><code data-lang="shell">$ sudo apt update ; sudo apt upgrade</code></pre>
 </div>
 </div>
-<div class="ulist">
-<ul>
+</li>
 <li>
 <p>Install utility packages</p>
-</li>
-</ul>
-</div>
 <div class="listingblock">
 <div class="content">
-<pre>$ sudo apt install apt-transport-https ca-certificates curl software-properties-common</pre>
+<pre class="CodeRay highlight nowrap"><code data-lang="shell">$ sudo apt install apt-transport-https ca-certificates curl software-properties-common</code></pre>
 </div>
 </div>
-<div class="ulist">
-<ul>
+</li>
 <li>
 <p>Add GPG key</p>
-</li>
-</ul>
-</div>
 <div class="listingblock">
 <div class="content">
-<pre>$ curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -</pre>
+<pre class="CodeRay highlight nowrap"><code data-lang="shell">$ curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -</code></pre>
 </div>
 </div>
-<div class="ulist">
-<ul>
+</li>
 <li>
 <p>Add docker repository to apt sources.</p>
-</li>
-</ul>
-</div>
 <div class="listingblock">
 <div class="content">
-<pre>$ sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu bionic stable"</pre>
+<pre class="CodeRay highlight nowrap"><code data-lang="shell">$ sudo add-apt-repository &quot;deb [arch=amd64] https://download.docker.com/linux/ubuntu bionic stable&quot;</code></pre>
 </div>
 </div>
-<div class="ulist">
-<ul>
+</li>
 <li>
 <p>Update apt sources and install docker</p>
-</li>
-</ul>
-</div>
 <div class="listingblock">
 <div class="content">
-<pre>$ sudo apt update ; sudo apt install docker-ce</pre>
+<pre class="CodeRay highlight nowrap"><code data-lang="shell">$ sudo apt update ; sudo apt install docker-ce</code></pre>
 </div>
 </div>
-<div class="ulist">
-<ul>
+</li>
 <li>
 <p>Verify docker service is started.</p>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight nowrap"><code data-lang="shell">$ sudo systemctl status docker</code></pre>
+</div>
+</div>
 </li>
 </ul>
 </div>
-<div class="listingblock">
-<div class="content">
-<pre>$ sudo systemctl status docker</pre>
 </div>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_enable_docker_command_execution_without_sudo">Enable docker command execution without sudo.</h2>
-<div class="sectionbody">
+<div class="sect2">
+<h3 id="_enable_docker_command_execution_without_sudo"><a class="anchor" href="#_enable_docker_command_execution_without_sudo"></a>Enable docker command execution without sudo.</h3>
 <div class="ulist">
 <ul>
 <li>
@@ -624,17 +602,17 @@ table.CodeRay td.code>pre{padding:0}
 <ul>
 <li>
 <p>To add current user</p>
-<div class="literalblock">
+<div class="listingblock">
 <div class="content">
-<pre>$ sudo usermod -aG docker ${USER}</pre>
+<pre class="CodeRay highlight nowrap"><code data-lang="shell"> $ sudo usermod -aG docker ${USER}</code></pre>
 </div>
 </div>
 </li>
 <li>
 <p>Alternatively to add any other user</p>
-<div class="literalblock">
+<div class="listingblock">
 <div class="content">
-<pre>$ sudo usermod -aG docker &lt;username&gt;</pre>
+<pre class="CodeRay highlight nowrap"><code data-lang="shell"> $ sudo usermod -aG docker &lt;username&gt;</code></pre>
 </div>
 </div>
 </li>
@@ -642,33 +620,28 @@ table.CodeRay td.code>pre{padding:0}
 </div>
 </li>
 <li>
-<p>Verify if user is added is added to docker group by listing the groups the user is added to.</p>
-</li>
-</ul>
-</div>
+<p>Verify if user is added to docker group by listing the groups the user is added to.</p>
 <div class="listingblock">
 <div class="content">
-<pre>$ id -nG ${USER}</pre>
+<pre class="CodeRay highlight nowrap"><code data-lang="shell">$ id -nG ${USER}</code></pre>
 </div>
 </div>
-<div class="ulist">
-<ul>
+</li>
 <li>
-<p>Logout and login to session.</p>
-</li>
-</ul>
-</div>
+<p>Login to new session, now you can execute <code>docker</code> commands without need <code>sudo</code> access.</p>
 <div class="listingblock">
 <div class="content">
-<pre>su - ${USER}</pre>
+<pre class="CodeRay highlight nowrap"><code data-lang="shell">$ su - ${USER}</code></pre>
 </div>
 </div>
+</li>
+</ul>
 </div>
 </div>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2019-01-22 00:30:45 IST
+Last updated 2019-01-23 01:46:19 IST
 </div>
 </div>
 </body>

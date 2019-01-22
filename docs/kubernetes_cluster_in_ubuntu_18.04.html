@@ -429,6 +429,7 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 #footer-text{color:rgba(0,0,0,.6);font-size:.9em}}
 @media amzn-kf8{#header,#content,#footnotes,#footer{padding:0}}
 </style>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 <style>
 /* Stylesheet for CodeRay to match GitHub theme | MIT License | http://foundation.zurb.com */
 /*pre.CodeRay {background-color:#f7f7f8;}*/
@@ -527,12 +528,20 @@ table.CodeRay td.code>pre{padding:0}
 <div id="toc" class="toc">
 <div id="toctitle">Table of Contents</div>
 <ul class="sectlevel1">
-<li><a href="#_virtualbox_setup">VirtualBox setup</a>
-<ul class="sectlevel2">
+<li><a href="#_virtualbox_setup">VirtualBox setup</a></li>
 <li><a href="#_vm_hardware_configuration">VM hardware configuration.</a></li>
-<li><a href="#_prepare_servers">Prepare Servers:</a></li>
-<li><a href="#_install_and_configure_kubernetes">Install and configure kubernetes.</a></li>
-<li><a href="#_configuration_and_joining_slave_node">Configuration and joining slave node.</a></li>
+<li><a href="#_prepare_servers">Prepare Servers</a>
+<ul class="sectlevel2">
+<li><a href="#_setup_network">Setup network.</a></li>
+<li><a href="#_install_docker">Install docker</a></li>
+</ul>
+</li>
+<li><a href="#_install_and_configure_kubernetes">Install and configure kubernetes.</a>
+<ul class="sectlevel2">
+<li><a href="#_general_installation">General Installation</a></li>
+<li><a href="#_configure_master_vm">Configure Master VM.</a></li>
+<li><a href="#_configure_kubernetes_dashboad">Configure Kubernetes Dashboad.</a></li>
+<li><a href="#_configuration_slave_node">Configuration slave node.</a></li>
 </ul>
 </li>
 </ul>
@@ -547,7 +556,7 @@ table.CodeRay td.code>pre{padding:0}
 </div>
 </div>
 <div class="sect1">
-<h2 id="_virtualbox_setup">VirtualBox setup</h2>
+<h2 id="_virtualbox_setup"><a class="anchor" href="#_virtualbox_setup"></a>VirtualBox setup</h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>Create two VMs k8s-master and k8s-s1 as shown in below diagram.</p>
@@ -569,8 +578,11 @@ table.CodeRay td.code>pre{padding:0}
                           VirtualBox VM setup</pre>
 </div>
 </div>
-<div class="sect2">
-<h3 id="_vm_hardware_configuration">VM hardware configuration.</h3>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_vm_hardware_configuration"><a class="anchor" href="#_vm_hardware_configuration"></a>VM hardware configuration.</h2>
+<div class="sectionbody">
 <div class="ulist">
 <ul>
 <li>
@@ -645,7 +657,7 @@ table.CodeRay td.code>pre{padding:0}
 <table>
 <tr>
 <td class="icon">
-<div class="title">Important</div>
+<i class="fa icon-important" title="Important"></i>
 </td>
 <td class="content">
 while creating disk partition do not select partition with LVM.
@@ -654,13 +666,15 @@ while creating disk partition do not select partition with LVM.
 </table>
 </div>
 </div>
-<div class="sect2">
-<h3 id="_prepare_servers">Prepare Servers:</h3>
+</div>
+<div class="sect1">
+<h2 id="_prepare_servers"><a class="anchor" href="#_prepare_servers"></a>Prepare Servers</h2>
+<div class="sectionbody">
 <div class="paragraph">
 <p>Execute the below step in both the VMs.</p>
 </div>
-<div class="sect4">
-<h5 id="_setup_network">Setup network.</h5>
+<div class="sect2">
+<h3 id="_setup_network"><a class="anchor" href="#_setup_network"></a>Setup network.</h3>
 <div class="ulist">
 <ul>
 <li>
@@ -676,16 +690,17 @@ while creating disk partition do not select partition with LVM.
 <p>Execute below command and note down the interfaces (generally for Virtual box VMs network interface will start with enp0s).</p>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight"><code data-lang="shell">$ sudo ifconfig -a</code></pre>
+<pre class="CodeRay highlight nowrap"><code data-lang="shell">$ sudo ifconfig -a</code></pre>
 </div>
 </div>
 </li>
 <li>
-<p>Setup static network. Open file /etc/netplan/50-cloud-init.yaml and add below configuration.</p>
+<p>Setup static network.</p>
 <div class="paragraph">
-<p><strong>On k8s-master</strong></p>
+<p>Open file <code>/etc/netplan/50-cloud-init.yaml</code> and add below configuration.</p>
 </div>
 <div class="listingblock">
+<div class="title"><strong>k8s-master</strong></div>
 <div class="content">
 <pre class="CodeRay highlight"><code data-lang="yaml"><span class="key">network</span>:
  <span class="key">ethernets</span>:
@@ -698,10 +713,8 @@ while creating disk partition do not select partition with LVM.
  <span class="key">version</span>: <span class="string"><span class="content">2</span></span></code></pre>
 </div>
 </div>
-<div class="paragraph">
-<p><strong>On k8s-s1</strong></p>
-</div>
 <div class="listingblock">
+<div class="title"><strong>k8s-s1</strong></div>
 <div class="content">
 <pre class="CodeRay highlight"><code data-lang="yaml"><span class="key">network</span>:
  <span class="key">ethernets</span>:
@@ -719,13 +732,14 @@ while creating disk partition do not select partition with LVM.
 <p>Reboot VMs.</p>
 </li>
 <li>
-<p>Update Packages if any</p>
-</li>
+<p>Update Packages.</p>
+<div class="ulist">
+<ul>
 <li>
 <p>Update apt sources.</p>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight"><code data-lang="bash">$ sudo apt update</code></pre>
+<pre class="CodeRay highlight nowrap"><code data-lang="shell">$ sudo apt update</code></pre>
 </div>
 </div>
 </li>
@@ -733,22 +747,25 @@ while creating disk partition do not select partition with LVM.
 <p>Install packages</p>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight"><code data-lang="bash">$ sudo apt upgrade</code></pre>
+<pre class="CodeRay highlight nowrap"><code data-lang="shell">$ sudo apt upgrade</code></pre>
 </div>
 </div>
 </li>
 </ul>
 </div>
+</li>
+</ul>
 </div>
-<div class="sect4">
-<h5 id="_install_docker">Install docker</h5>
+</div>
+<div class="sect2">
+<h3 id="_install_docker"><a class="anchor" href="#_install_docker"></a>Install docker</h3>
 <div class="ulist">
 <ul>
 <li>
 <p>Install utility packages</p>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight"><code data-lang="bash">$ sudo apt install apt-transport-https ca-certificates curl software-properties-common</code></pre>
+<pre class="CodeRay highlight nowrap"><code data-lang="shell">$ sudo apt install apt-transport-https ca-certificates curl software-properties-common</code></pre>
 </div>
 </div>
 </li>
@@ -756,7 +773,7 @@ while creating disk partition do not select partition with LVM.
 <p>Add GPG key</p>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight"><code data-lang="bash">$ curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -</code></pre>
+<pre class="CodeRay highlight nowrap"><code data-lang="shell">$ curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -</code></pre>
 </div>
 </div>
 </li>
@@ -764,7 +781,7 @@ while creating disk partition do not select partition with LVM.
 <p>Add docker repository to apt sources.</p>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight"><code data-lang="bash">$ sudo add-apt-repository &quot;deb [arch=amd64] https://download.docker.com/linux/ubuntu bionic stable&quot;</code></pre>
+<pre class="CodeRay highlight nowrap"><code data-lang="shell">$ sudo add-apt-repository &quot;deb [arch=amd64] https://download.docker.com/linux/ubuntu bionic stable&quot;</code></pre>
 </div>
 </div>
 </li>
@@ -772,7 +789,7 @@ while creating disk partition do not select partition with LVM.
 <p>Update apt sources and install docker</p>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight"><code data-lang="bash">$ sudo apt update ; sudo apt install docker-ce</code></pre>
+<pre class="CodeRay highlight nowrap"><code data-lang="shell">$ sudo apt update ; sudo apt install docker-ce</code></pre>
 </div>
 </div>
 </li>
@@ -780,7 +797,7 @@ while creating disk partition do not select partition with LVM.
 <p>Verify docker service is started.</p>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight"><code data-lang="bash">$ sudo systemctl status docker</code></pre>
+<pre class="CodeRay highlight nowrap"><code data-lang="shell">$ sudo systemctl status docker</code></pre>
 </div>
 </div>
 </li>
@@ -788,10 +805,12 @@ while creating disk partition do not select partition with LVM.
 </div>
 </div>
 </div>
+</div>
+<div class="sect1">
+<h2 id="_install_and_configure_kubernetes"><a class="anchor" href="#_install_and_configure_kubernetes"></a>Install and configure kubernetes.</h2>
+<div class="sectionbody">
 <div class="sect2">
-<h3 id="_install_and_configure_kubernetes">Install and configure kubernetes.</h3>
-<div class="sect3">
-<h4 id="_general_installation">General Installation</h4>
+<h3 id="_general_installation"><a class="anchor" href="#_general_installation"></a>General Installation</h3>
 <div class="paragraph">
 <p>Execute the below steps on both the VMs.</p>
 </div>
@@ -801,7 +820,7 @@ while creating disk partition do not select partition with LVM.
 <p>Add Kubernetes source gpg.</p>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight"><code data-lang="bash">$ curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add</code></pre>
+<pre class="CodeRay highlight nowrap"><code data-lang="shell">$ curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add</code></pre>
 </div>
 </div>
 </li>
@@ -809,17 +828,17 @@ while creating disk partition do not select partition with LVM.
 <p>Next add kubernetes repository</p>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight"><code data-lang="bash">$ sudo apt-add-repository &quot;deb http://apt.kubernetes.io/ kubernetes-xenial main&quot;</code></pre>
+<pre class="CodeRay highlight nowrap"><code data-lang="shell">$ sudo apt-add-repository &quot;deb http://apt.kubernetes.io/ kubernetes-xenial main&quot;</code></pre>
 </div>
 </div>
 <div class="admonitionblock note">
 <table>
 <tr>
 <td class="icon">
-<div class="title">Note</div>
+<i class="fa icon-note" title="Note"></i>
 </td>
 <td class="content">
-Browese <a href="http://apt.kubernetes.io/" class="bare">http://apt.kubernetes.io/</a> and search for the corresponding ubuntu version, since there was no kubernetes-bionic, installing kubernetes-xenial in my case.
+Browse <a href="http://apt.kubernetes.io/" class="bare">http://apt.kubernetes.io/</a> and search for the corresponding ubuntu version, since there was no kubernetes-bionic, installing kubernetes-xenial in my case.
 </td>
 </tr>
 </table>
@@ -829,7 +848,7 @@ Browese <a href="http://apt.kubernetes.io/" class="bare">http://apt.kubernetes.i
 <p>Install <code>kubeadm</code></p>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight"><code data-lang="bash">$ sudo apt install kubeadm</code></pre>
+<pre class="CodeRay highlight nowrap"><code data-lang="shell">$ sudo apt install kubeadm</code></pre>
 </div>
 </div>
 </li>
@@ -837,7 +856,7 @@ Browese <a href="http://apt.kubernetes.io/" class="bare">http://apt.kubernetes.i
 <p>Turn off swap</p>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight"><code data-lang="bash">$ sudo swapoff -a</code></pre>
+<pre class="CodeRay highlight nowrap"><code data-lang="shell">$ sudo swapoff -a</code></pre>
 </div>
 </div>
 </li>
@@ -847,7 +866,7 @@ Browese <a href="http://apt.kubernetes.io/" class="bare">http://apt.kubernetes.i
 <table>
 <tr>
 <td class="icon">
-<div class="title">Important</div>
+<i class="fa icon-important" title="Important"></i>
 </td>
 <td class="content">
 If 4 and 5 steps not followed, kubelet service will not start.
@@ -862,37 +881,37 @@ If 4 and 5 steps not followed, kubelet service will not start.
 </ol>
 </div>
 </div>
-<div class="sect3">
-<h4 id="_configure_master_vm">Configure Master VM.</h4>
+<div class="sect2">
+<h3 id="_configure_master_vm"><a class="anchor" href="#_configure_master_vm"></a>Configure Master VM.</h3>
 <div class="olist arabic">
 <ol class="arabic">
 <li>
 <p>Initialize kubernetes master node by executing below command.</p>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight"><code data-lang="bash">$ sudo kubeadm init --apiserver-advertise-address=192.168.56.10 \
+<pre class="CodeRay highlight nowrap"><code data-lang="shell">$ sudo kubeadm init --apiserver-advertise-address=192.168.56.10 \
          --pod-network-cidr=10.244.0.0/16</code></pre>
 </div>
 </div>
 </li>
 <li>
-<p>As output of above command shows to execute below command to enable kubectl command. Execute the below command.</p>
+<p>As output of above command shows to execute below command, run below command to enable <code>kubectl</code> command. Execute the below command.</p>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight"><code data-lang="bash">$ mkdir -p $HOME/.kube
+<pre class="CodeRay highlight nowrap"><code data-lang="shell">$ mkdir -p $HOME/.kube
 $ sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
 $ sudo chown $(id -u):$(id -g) $HOME/.kube/config</code></pre>
 </div>
 </div>
 </li>
 <li>
-<p>Note down (copy to textpad) the kubeadm join command which needs to be executed on slave nodes to join to the cluster, we not run the command now, instead we will execute once dashboard is installed as we need dashboard to be installed on master node.</p>
+<p>Note down (copy to textpad) the <code>kubeadm</code> join command which needs to be executed on slave nodes to join to the cluster, we not run the command now, instead we will execute once dashboard is installed as we need dashboard to be installed on master node.</p>
 </li>
 <li>
 <p>Install pod network.</p>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight"><code data-lang="bash">$ kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml</code></pre>
+<pre class="CodeRay highlight nowrap"><code data-lang="shell">$ kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml</code></pre>
 </div>
 </div>
 </li>
@@ -900,13 +919,13 @@ $ sudo chown $(id -u):$(id -g) $HOME/.kube/config</code></pre>
 <p>Verify all necessary pods are started</p>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight"><code data-lang="bash">$ kubectl get pods --all-namespaces</code></pre>
+<pre class="CodeRay highlight nowrap"><code data-lang="shell">$ kubectl get pods --all-namespaces</code></pre>
 </div>
 </div>
 <div class="listingblock">
 <div class="title">output:</div>
 <div class="content">
-<pre class="CodeRay highlight"><code data-lang="bash">NAMESPACE     NAME                                 READY   STATUS    RESTARTS   AGE
+<pre class="CodeRay highlight nowrap"><code data-lang="shell">NAMESPACE     NAME                                 READY   STATUS    RESTARTS   AGE
 kube-system   coredns-86c58d9df4-c68gd             1/1     Running   0          6m41s
 kube-system   coredns-86c58d9df4-q5bht             1/1     Running   0          6m41s
 kube-system   etcd-k8s-master                      1/1     Running   0          6m6s
@@ -920,15 +939,18 @@ kube-system   kube-scheduler-k8s-master            1/1     Running   0          
 </li>
 </ol>
 </div>
-<div class="sect4">
-<h5 id="_configure_kubernetes_dashboad">Configure Kubernetes Dashboad.</h5>
+</div>
+<div class="sect2">
+<h3 id="_configure_kubernetes_dashboad"><a class="anchor" href="#_configure_kubernetes_dashboad"></a>Configure Kubernetes Dashboad.</h3>
+<div class="sect3">
+<h4 id="_install_dashboard"><a class="anchor" href="#_install_dashboard"></a>Install Dashboard</h4>
 <div class="olist arabic">
 <ol class="arabic">
 <li>
 <p>Deploy dashboard.</p>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight"><code data-lang="bash">$ kubectl create -f https://raw.githubusercontent.com/kubernetes/dashboard/master/aio/deploy/recommended/kubernetes-dashboard.yaml</code></pre>
+<pre class="CodeRay highlight nowrap"><code data-lang="shell">$ kubectl create -f https://raw.githubusercontent.com/kubernetes/dashboard/master/aio/deploy/recommended/kubernetes-dashboard.yaml</code></pre>
 </div>
 </div>
 </li>
@@ -936,13 +958,13 @@ kube-system   kube-scheduler-k8s-master            1/1     Running   0          
 <p>Wait till dashboard pod is running.</p>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight"><code data-lang="bash">$ kubectl get pods --all-namespaces</code></pre>
+<pre class="CodeRay highlight nowrap"><code data-lang="shell">$ kubectl get pods --all-namespaces</code></pre>
 </div>
 </div>
 <div class="listingblock">
 <div class="title">output:</div>
 <div class="content">
-<pre class="CodeRay highlight"><code data-lang="bash">NAMESPACE     NAME                                   READY   STATUS    RESTARTS   AGE
+<pre class="CodeRay highlight nowrap"><code data-lang="shell">NAMESPACE     NAME                                   READY   STATUS    RESTARTS   AGE
 kube-system   coredns-86c58d9df4-c68gd               1/1     Running   0          11m
 kube-system   coredns-86c58d9df4-q5bht               1/1     Running   0          11m
 kube-system   etcd-k8s-master                        1/1     Running   0          10m
@@ -959,7 +981,7 @@ kube-system   kubernetes-dashboard-57df4db6b-5phx2   1/1     Running   0        
 <p>By default dashboard cannot be accessed from outside the VM, if you are using ubuntu desktop you can run below command and access the dashboard using proxy at url  <a href="http://localhost:8001/api/v1/namespaces/kube-system/services/https:kubernetes-dashboard:/proxy/" class="bare">http://localhost:8001/api/v1/namespaces/kube-system/services/https:kubernetes-dashboard:/proxy/</a></p>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight"><code data-lang="bash">$ kubectl proxy</code></pre>
+<pre class="CodeRay highlight nowrap"><code data-lang="shell">$ kubectl proxy</code></pre>
 </div>
 </div>
 <div class="olist arabic">
@@ -968,7 +990,7 @@ kube-system   kubernetes-dashboard-57df4db6b-5phx2   1/1     Running   0        
 <p>However if you want dashboard be accessed from external ip editing kubernetes-dashboard service and changing type from ClusterIP to NodePort.</p>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight"><code data-lang="bash">$ kubectl edit service kubernetes-dashboard -n kube-system</code></pre>
+<pre class="CodeRay highlight nowrap"><code data-lang="shell">$ kubectl edit service kubernetes-dashboard -n kube-system</code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -998,10 +1020,18 @@ kube-system   kubernetes-dashboard-57df4db6b-5phx2   1/1     Running   0        
   <span class="key">selector</span>:
     <span class="key">k8s-app</span>: <span class="string"><span class="content">kubernetes-dashboard</span></span>
   <span class="key">sessionAffinity</span>: <span class="string"><span class="content">None</span></span>
-  <span class="key">type</span>: <span class="string"><span class="content">NodePort</span></span>
+  <span class="key">type</span>: <span class="string"><span class="content">ClusterIP </span></span><i class="conum" data-value="1"></i><b>(1)</b>
 <span class="key">status</span>:
   <span class="key">loadBalancer</span>: <span class="string"><span class="content">{}</span></span></code></pre>
 </div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Replace <strong>ClusterIP</strong> with <strong>NodePort</strong></td>
+</tr>
+</table>
 </div>
 </li>
 </ol>
@@ -1011,13 +1041,13 @@ kube-system   kubernetes-dashboard-57df4db6b-5phx2   1/1     Running   0        
 <p>Execute the below command and note down the port</p>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight"><code data-lang="bash">$ kubectl get service --all-namespaces</code></pre>
+<pre class="CodeRay highlight nowrap"><code data-lang="shell">$ kubectl get service --all-namespaces</code></pre>
 </div>
 </div>
 <div class="listingblock">
 <div class="title">output:</div>
 <div class="content">
-<pre class="CodeRay highlight"><code data-lang="bash">NAMESPACE     NAME                   TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)         AGE
+<pre class="CodeRay highlight nowrap"><code data-lang="shell">NAMESPACE     NAME                   TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)         AGE
 default       kubernetes             ClusterIP   10.96.0.1        &lt;none&gt;        443/TCP         21m
 kube-system   kube-dns               ClusterIP   10.96.0.10       &lt;none&gt;        53/UDP,53/TCP   21m
 kube-system   kubernetes-dashboard   NodePort    10.110.253.116   &lt;none&gt;        443:32608/TCP   10m</code></pre>
@@ -1027,7 +1057,7 @@ kube-system   kubernetes-dashboard   NodePort    10.110.253.116   &lt;none&gt;  
 <table>
 <tr>
 <td class="icon">
-<div class="title">Note</div>
+<i class="fa icon-note" title="Note"></i>
 </td>
 <td class="content">
 The dashboard port is <strong>32608</strong> in my case.
@@ -1042,7 +1072,7 @@ The dashboard port is <strong>32608</strong> in my case.
 <table>
 <tr>
 <td class="icon">
-<div class="title">Caution</div>
+<i class="fa icon-caution" title="Caution"></i>
 </td>
 <td class="content">
 Port will be dynamically generated and port should be replaced from step 5.
@@ -1054,15 +1084,15 @@ Port will be dynamically generated and port should be replaced from step 5.
 </ol>
 </div>
 </div>
-<div class="sect4">
-<h5 id="_create_service_account_and_access_dashboard">Create service Account and access dashboard.</h5>
+<div class="sect3">
+<h4 id="_create_service_account_and_access_dashboard"><a class="anchor" href="#_create_service_account_and_access_dashboard"></a>Create service Account and access dashboard.</h4>
 <div class="olist arabic">
 <ol class="arabic">
 <li>
 <p>Create a service account</p>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight"><code data-lang="bash">$ kubectl create serviceaccount admin-user -n kube-system</code></pre>
+<pre class="CodeRay highlight nowrap"><code data-lang="shell">$ kubectl create serviceaccount admin-user -n kube-system</code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -1070,7 +1100,7 @@ Port will be dynamically generated and port should be replaced from step 5.
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight"><code data-lang="bash">$ kubectl get serviceaccount --all-namespaces</code></pre>
+<pre class="CodeRay highlight nowrap"><code data-lang="shell">$ kubectl get serviceaccount --all-namespaces</code></pre>
 </div>
 </div>
 </li>
@@ -1078,7 +1108,7 @@ Port will be dynamically generated and port should be replaced from step 5.
 <p>Create Cluster Role binding for the user.</p>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight"><code data-lang="bash">$  kubectl create clusterrolebinding admin-user -n kube-system \
+<pre class="CodeRay highlight nowrap"><code data-lang="shell">$  kubectl create clusterrolebinding admin-user -n kube-system \
          --clusterrole=cluster-admin \
          --serviceaccount=kube-system:admin-user</code></pre>
 </div>
@@ -1088,13 +1118,15 @@ Port will be dynamically generated and port should be replaced from step 5.
 <p>Generate the Bearer Token to access Dashboard</p>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight"><code data-lang="bash">$ kubectl -n kube-system describe secret $(kubectl -n kube-system get secret | grep admin-user | awk '{print $1}')</code></pre>
+<pre class="CodeRay highlight nowrap"><code data-lang="shell">$ kubectl -n kube-system describe secret $(kubectl -n kube-system get secret | \
+         grep admin-user | \
+          awk '{print $1}')</code></pre>
 </div>
 </div>
 <div class="listingblock">
 <div class="title">output:</div>
 <div class="content">
-<pre class="CodeRay highlight"><code data-lang="bash">Name:         admin-user-token-4nwz2
+<pre class="CodeRay highlight nowrap"><code data-lang="shell">Name:         admin-user-token-4nwz2
 Namespace:    kube-system
 Labels:       &lt;none&gt;
 Annotations:  kubernetes.io/service-account.name: admin-user
@@ -1117,23 +1149,23 @@ token:      eyJhbGciOiJSUzI1NiIsImtpZCI6IiJ9.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2V
 </div>
 </div>
 </div>
-</div>
 <div class="sect2">
-<h3 id="_configuration_and_joining_slave_node">Configuration and joining slave node.</h3>
+<h3 id="_configuration_slave_node"><a class="anchor" href="#_configuration_slave_node"></a>Configuration slave node.</h3>
 <div class="olist arabic">
 <ol class="arabic">
 <li>
 <p>Now go to slave node and execute the join command previously saved when you were executing kubeadm on master.</p>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight"><code data-lang="bash">$  kubeadm join 192.168.56.10:6443 --token t0j1zi.v5lojsnpjh9r0rbn --discovery-token-ca-cert-hash sha256:40b1142d9002003ab5b085776b8b8cba4a41ceaafab06429c49eaedc2b2939fa</code></pre>
+<pre class="CodeRay highlight nowrap"><code data-lang="shell">$  kubeadm join 192.168.56.10:6443 --token t0j1zi.v5lojsnpjh9r0rbn \
+        --discovery-token-ca-cert-hash sha256:40b1142d9002003ab5b085776b8b8cba4a41ceaafab06429c49eaedc2b2939fa</code></pre>
 </div>
 </div>
 <div class="admonitionblock note">
 <table>
 <tr>
 <td class="icon">
-<div class="title">Note</div>
+<i class="fa icon-note" title="Note"></i>
 </td>
 <td class="content">
 The above command is sample, the values are dynamically generated.
@@ -1146,13 +1178,13 @@ The above command is sample, the values are dynamically generated.
 <p>Now go back to master and execute the below command, you should be able to see slave node added.</p>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight"><code data-lang="bash">$ kubectl get nodes</code></pre>
+<pre class="CodeRay highlight nowrap"><code data-lang="shell">$ kubectl get nodes</code></pre>
 </div>
 </div>
 <div class="listingblock">
 <div class="title">output:</div>
 <div class="content">
-<pre class="CodeRay highlight"><code data-lang="bash">NAME         STATUS   ROLES    AGE     VERSION
+<pre class="CodeRay highlight nowrap"><code data-lang="shell">NAME         STATUS   ROLES    AGE     VERSION
 k8s-master   Ready    master   56m     v1.13.2
 k8s-s1       Ready    &lt;none&gt;   2m49s   v1.13.2</code></pre>
 </div>
@@ -1166,7 +1198,7 @@ k8s-s1       Ready    &lt;none&gt;   2m49s   v1.13.2</code></pre>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2019-01-22 02:03:42 IST
+Last updated 2019-01-23 02:05:06 IST
 </div>
 </div>
 </body>

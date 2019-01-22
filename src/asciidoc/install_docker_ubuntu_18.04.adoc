@@ -1,51 +1,71 @@
 = Installation and configuration of docker in Ubuntu 18.04
 
-== Install docker package
+=== Install docker package
 
 Below are the steps to install docker in ubuntu 18.04
 
 * First update existing packages.
++
+[source,shell,options="nowrap"]
 ----
 $ sudo apt update ; sudo apt upgrade
 ----
 * Install utility packages
++
+[source,shell,options="nowrap"]
 ----
 $ sudo apt install apt-transport-https ca-certificates curl software-properties-common
 ----
 * Add GPG key
++
+[source,shell,options="nowrap"]
 ----
 $ curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
 ----
 * Add docker repository to apt sources.
++
+[source,shell,options="nowrap"]
 ----
 $ sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu bionic stable"
 ----
 * Update apt sources and install docker
++
+[source,shell,options="nowrap"]
 ----
 $ sudo apt update ; sudo apt install docker-ce
 ----
 * Verify docker service is started.
++
+[source,shell,options="nowrap"]
 ----
 $ sudo systemctl status docker
 ----
 
 
-== Enable docker command execution without sudo.  
+=== Enable docker command execution without sudo.  
 
 * We need to add user to docker group to enable docker command execution without sudo user.
 ** To add current user
-
++
+[source,shell,options="nowrap"]
+----
  $ sudo usermod -aG docker ${USER}
-
+----
 ** Alternatively to add any other user
-
++
+[source,shell,options="nowrap"]
+----
  $ sudo usermod -aG docker <username>
-
-* Verify if user is added is added to docker group by listing the groups the user is added to.
+----
+* Verify if user is added to docker group by listing the groups the user is added to.
++
+[source,shell,options="nowrap"]
 ----
 $ id -nG ${USER}
 ----
-* Logout and login to session.
+* Login to new session, now you can execute `docker` commands without need `sudo` access.
++
+[source,shell,options="nowrap"]
 ----
-su - ${USER}
+$ su - ${USER}
 ----

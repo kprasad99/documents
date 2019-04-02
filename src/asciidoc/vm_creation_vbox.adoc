@@ -1,0 +1,73 @@
+==== Setup VM in VirtualBox
+:data-uri:
+:imagesdir: ./images
+
+The below steps guides through to create Virtual Machine in VirtualBox.
+
+- In VirtualBox home screen go to Machine Menu and click on New (Machine->New), which would open VM creation form window.
++
+image::vm_create_1.png[VM Creation Window] 
+- In VM creation Window set VM name, location to store machine config and logs. and OS type desired(In our case it will be Linux) and version (Ubuntu 18.04).
++
+image::vm_create_2.png[VM Creation Window]
+- Click on expert mode and set desired RAM(min 4GB)
+- Select Option `Create new Virtual Harddisk now` and click next.
++
+image::vm_create_3.png[VM set HDD]
+- Provide directory location to store VM image, set Hard disk space required(min 20GB) and set Fixed Size Mode so that we get better performance. Let the image type be default VDI. Then click Create Button(It would take couple of minutes to create Allocate Image)
++
+image::vm_create_4.png[VM HDD configuration]
+- Now, Double click on the VM Name in VBox home page. which start the VM.
+- A option will popup to provide OS Image. Browse to OS image location and provide OS image (ubuntu-18.04.1.0-live-server-amd64.iso). Then click on button start.
++
+image::vm_create_5.png[VM setup]
+- After image is loaded, you will be asked to choose the language, set the desired language.
++
+image::vm_create_6.png[VM Creation Window]
+- Next you will be prompted to select keyboard layout, let the default configuration be as it is. Navigate to Done using tab and click enter.
+- Next you will be prompted to select Network interface, let the default configuration be as it is will change it later on. Navigate to Done using tab and click enter.
++
+image::vm_create_7.png[VM Creation Window]
+- Next setup hard drive by selecting option entire disk with LVM.
++
+image::vm_create_8.png[VM Creation Window]
+- Navigate through `Configure Ubuntu Archive Mirror` with default values.
++
+image::vm_create_9.png[VM Creation Window]
+- A summary window will shown describing the Disk Partitions, Navigate to Done option and press Enter.
++
+image::vm_create_10.png[VM Creation Window]
+- Next Profile setup window comes up, fill all the details.
++
+image::vm_create_11.png[VM Creation Window]
+- Once you navigate from profile setup window, it would take sometime to setup OS. Once Setup completes, would prompt to install grub, select yes to install grub, finally after installation click on `Reboot`
++
+image::vm_create_12.png[VM Creation Window]
+
+==== Setup VM Network
+
+We will add 3 Networks to VM, with first network being `host only`, second network being `NAT` and final network being `Bridged`
+
+- Shutdown the VM.
+- Select the VM, Navigate to Machine->Settings and select tab Network.
++
+image::vm_create_13.png[VM Creation Window]
+- Select Adapter 1 tab and set `attached-to` Host-Only Adapter and fill the details as show below.
++
+image::vm_create_14.png[VM Network Adapter 1]
+- Select Adapter 2 tab and set `attached-to` NAT and fill the details as show below.
++
+image::vm_create_15.png[VM Network Adapter 2]
+- Select Adapter 3 tab and set `attached-to` Bridged and fill the details as show below.
++
+image::vm_create_16.png[VM Network Adapter 3]
+- Start the VM and login to the VM. and execute below command and note down list of interface names. 
++
+[sh]
+```
+$ ifconfig -a
+```
+- Open netplan yaml file at `/etc/netplan/50-cloud-init.yaml` and set static IP for host-only adapter and dhcp IP auto discovery for NAT and Bridged, For Host-only network before setting up note down the subnet for Host only adapter from VirtualBox Network. You can also setup a static IP from Bridge Network. A sample configuration is as shown below.
++
+image::vm_create_17.png[VM Network Adapter 3]
+- Reboot the VM.

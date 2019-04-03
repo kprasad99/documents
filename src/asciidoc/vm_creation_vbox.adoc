@@ -13,10 +13,10 @@ image::vm_create_2.png[VM Creation Window]
 - Click on expert mode and set desired RAM(min 4GB)
 - Select Option `Create new Virtual Harddisk now` and click `create`.
 +
-image::vm_create_3.png[VM set HDD]
+image::vm_create_2.png[VM set HDD]
 - Provide directory location to store VM image, set Hard disk space required(min 20GB) and set Fixed Size Mode so that we get better performance. Let the image type be default VDI. Then click Create Button(It would take couple of minutes to create Allocate Image)
 +
-image::vm_create_2.png[VM Creation Window]
+image::vm_create_3.png[VM Creation Window]
 - Now, Double click on the VM Name in VBox home page. which start the VM.
 - A option will popup to provide OS Image. Browse to OS image location and provide OS image (ubuntu-18.04.1.0-live-server-amd64.iso). Then click on button start.
 +
@@ -30,13 +30,13 @@ image::vm_create_6.png[VM Creation Window]
 - Next you will be prompted to select Network interface, let the default configuration be as it is will change it later on. Navigate to Done using tab and click enter.
 +
 image::vm_create_7.png[VM Creation Window]
-- Next setup hard drive by selecting option entire disk with LVM.
+- Next setup hard drive by selecting option `entire disk with LVM`.
 +
 image::vm_create_8.png[VM Creation Window]
 - Navigate through `Configure Ubuntu Archive Mirror` with default values.
 +
 image::vm_create_9.png[VM Creation Window]
-- A summary window will shown describing the Disk Partitions, Navigate to Done option and press Enter.
+- A summary window will shown describing the Disk Partitions, Navigate to `Done` option and press Enter.
 +
 image::vm_create_10.png[VM Creation Window]
 - Next Profile setup window comes up, fill all the details.

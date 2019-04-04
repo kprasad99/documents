@@ -1,0 +1,18 @@
+= Guide to Setup CI/CD Tools
+
+include::vm_creation_vbox.adoc[]
+
+include::install_gitlab_ubuntu_18.04.adoc[]
+
+IMPORTANT: **Install JDK-8 as Jenkins LTS does not support JDK-11**
+
+include::install_jdk_ubuntu_18_04.adoc[]
+
+include::install_jenkins_ubuntu_18.04.adoc[]
+
+IMPORTANT: **Use jenkins user while adding user to docker group.**
+
+include::install_docker_ubuntu_18.04.adoc[]
+
+include::integrate_gitlab_and_jenkins.adoc[]
+

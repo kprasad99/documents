@@ -31,6 +31,7 @@ image::vm_create_6.png[VM Creation Window]
 +
 image::vm_create_7.png[VM Creation Window]
 - Next setup hard drive by selecting option `entire disk with LVM`.
+CAUTION: When choosing LVM make sure you've selected added entire disk to VG by default in 18.04 4GB is selected. You can add the Disk at later point as well.
 +
 image::vm_create_8.png[VM Creation Window]
 - Navigate through `Configure Ubuntu Archive Mirror` with default values.
@@ -63,7 +64,7 @@ image::vm_create_15.png[VM Network Adapter 2]
 - Select Adapter 3 tab and set `attached-to` Bridged and fill the details as show below.
 +
 image::vm_create_16.png[VM Network Adapter 3]
-- Start the VM and login to the VM. and execute below command and note down list of interface names. 
+- Start the VM, login to the VM, execute below command and note down list of interface names.
 +
 [sh]
 ```

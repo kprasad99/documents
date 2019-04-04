@@ -1,0 +1,96 @@
+=== Install and setup GitLab on Ubuntu 18.04 server.
+
+==== Install Gitlab
+
+- Update packages
++
+[sh]
+```
+$ sudo apt-get update
+```
+- Install additional packages
+[sh]
+```
+$ sudo apt-get install -y curl openssh-server ca-certificates
+```
+- Add the GitLab package repository and install the package
++
+Add the GitLab package repository.
+[sh, auto]
+```
+$ curl https://packages.gitlab.com/install/repositories/gitlab/gitlab-ce/script.deb.sh \
+		 | sudo bash
+```
+- Next, install the GitLab package. Change https://gitlab.example.com to the URL at which you want to access your GitLab instance. Installation will automatically configure and start GitLab at that URL. For https:// URLs GitLab will automatically request a certificate with Let's Encrypt, which requires inbound HTTP access and a valid hostname. You can also use your own certificate or just use http://.
+[sh, auto]
+```
+$ sudo EXTERNAL_URL="https://gitlab.example.com" apt-get install gitlab-ce
+```
+- Browse to the hostname and login.
++
+On your first visit, you'll be redirected to a password reset screen. Provide the password for the initial administrator account and you will be redirected back to the login screen. Use the default account's username `root` to login.
+
+==== Setup Email Address using Gmail.
+
+* Enable 2-way Authentication by following the https://myaccount.google.com/signinoptions/two-step-verification/enroll-welcome[steps here]
+* Generate App code.
+** Go to your Google Account.
+** On the left navigation panel, click Security.
+** On the "Signing in to Google" panel, click App passwords. If prompted, enter your password.
++
+NOTE: If you can't get to the page, 2-Step Verification is:
+
+ - Not set up for your account
+ - Set up for security keys only
+
+** At the bottom, click Select app and choose the app you’re using.
+** Click Select device and choose the device you’re using.
+** Click Generate.
+** Follow the instructions to enter the App password (the 16 character code in the yellow bar) on your device.
+** Copy the app password and click Done.
+* Setup SMTP server on `Gitlab`
+** Open `/etc/gitlab/gitlab.rb`
++
+[sh]
+```
+$ sudo vim /etc/gitlab/gitlab.rb
+```
+** Copy the below content and update email and password generated in previous step
++
+[ruby]
+```
+gitlab_rails['smtp_enable'] = true
+gitlab_rails['smtp_address'] = "smtp.gmail.com"
+gitlab_rails['smtp_port'] = 587
+gitlab_rails['smtp_user_name'] = "my.email@gmail.com"
+gitlab_rails['smtp_password'] = "my-gmail-password"
+gitlab_rails['smtp_domain'] = "smtp.gmail.com"
+gitlab_rails['smtp_authentication'] = "login"
+gitlab_rails['smtp_enable_starttls_auto'] = true
+gitlab_rails['smtp_tls'] = false
+gitlab_rails['smtp_openssl_verify_mode'] = 'peer'
+
+gitlab_rails['gitlab_email_from'] = 'gitlab@example.com'
+gitlab_rails['gitlab_email_reply_to'] = 'noreply@example.com'
+
+```
+* Reload the configuration be executing below command
++
+[sh]
+```
+$ sudo gitlab-ctl reconfigure
+```
+* Testing gitlab's ability to send email
+** Open Ruby console
++
+[sh]
+```
+$ sudo gitlab-rails console
+```
+** Execute below command after updating destination email address
++
+[sh]
+```
+> Notify.test_email('destination_email@address.com', 'Message Subject', '<html><body>Message Body</body></html>').deliver_now
+```
+

@@ -5,7 +5,7 @@
 <!--[if IE]><meta http-equiv="X-UA-Compatible" content="IE=edge"><![endif]-->
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="generator" content="Asciidoctor 1.5.7.1">
-<title>Steps to Integrate Gitlab with Jenkins</title>
+<title>Install and setup NEXUS 3 on Ubuntu 18.04</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700">
 <style>
 /* Asciidoctor default stylesheet | MIT License | http://asciidoctor.org */
@@ -527,10 +527,10 @@ table.CodeRay td.code>pre{padding:0}
 <div id="toc" class="toc">
 <div id="toctitle">Table of Contents</div>
 <ul class="sectlevel1">
-<li><a href="#_steps_to_integrate_gitlab_with_jenkins">Steps to Integrate Gitlab with Jenkins</a>
-<ul class="sectlevel2">
-<li><a href="#_jenkins_server_configuration">Jenkins Server configuration</a></li>
-<li><a href="#_jenkins_to_gitlab_clone_authentication">Jenkins-to-Gitlab Clone AUthentication</a></li>
+<li><a href="#_install_and_setup_nexus_3_on_ubuntu_18_04">Install and setup NEXUS 3 on Ubuntu 18.04</a>
+<ul class="sectlevel3">
+<li><a href="#_setup_maven_repository">Setup Maven Repository</a></li>
+<li><a href="#_setup_docker_private_registry">Setup docker private registry</a></li>
 </ul>
 </li>
 </ul>
@@ -538,107 +538,152 @@ table.CodeRay td.code>pre{padding:0}
 </div>
 <div id="content">
 <div class="sect1">
-<h2 id="_steps_to_integrate_gitlab_with_jenkins"><a class="anchor" href="#_steps_to_integrate_gitlab_with_jenkins"></a>Steps to Integrate Gitlab with Jenkins</h2>
+<h2 id="_install_and_setup_nexus_3_on_ubuntu_18_04"><a class="anchor" href="#_install_and_setup_nexus_3_on_ubuntu_18_04"></a>Install and setup NEXUS 3 on Ubuntu 18.04</h2>
 <div class="sectionbody">
-<div class="sect2">
-<h3 id="_jenkins_server_configuration"><a class="anchor" href="#_jenkins_server_configuration"></a>Jenkins Server configuration</h3>
-<div class="sect3">
-<h4 id="_install_plugins"><a class="anchor" href="#_install_plugins"></a>Install Plugins</h4>
 <div class="ulist">
 <ul>
 <li>
-<p>Goto <code>Manage Jenkins</code> &#8594; <code>Manage Plguins</code> &#8594; <code>Available Tab</code> and install following plugins.</p>
-<div class="ulist">
-<ul>
-<li>
-<p>Violation Comments to GitLab</p>
-</li>
-<li>
-<p>GitLab</p>
-</li>
-<li>
-<p>Blue Ocean</p>
-</li>
-<li>
-<p>Common API for Blue Ocean</p>
-</li>
-<li>
-<p>Config API for Blue Ocean</p>
-</li>
-<li>
-<p>Dashboard for Blue Ocean</p>
-</li>
-<li>
-<p>Events API for Blue Ocean</p>
-</li>
-<li>
-<p>Git Pipeline for Blue Ocean</p>
-</li>
-<li>
-<p>JWT for Blue Ocean</p>
-</li>
-<li>
-<p>Personalization for Blue Ocean</p>
-</li>
-<li>
-<p>Pipeline implementation for Blue Ocean</p>
-</li>
-<li>
-<p>REST API for Blue Ocean</p>
-</li>
-<li>
-<p>REST Implementation for Blue Ocean</p>
-</li>
-<li>
-<p>Web for Blue Ocean</p>
-</li>
-<li>
-<p>Blue Ocean Pipeline Editor</p>
-</li>
-<li>
-<p>Blue Ocean Executor Info</p>
-</li>
-<li>
-<p>Pipeline SCM API for Blue Ocean</p>
-</li>
-<li>
-<p>docker</p>
-</li>
-<li>
-<p>HTML Publisher</p>
-</li>
-<li>
-<p>Pipeline Utility Steps</p>
-</li>
-</ul>
-</div>
-</li>
-</ul>
+<p>Download the NEXUS package</p>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code>$ wget https://sonatype-download.global.ssl.fastly.net/repository/repositoryManager/3/nexus-3.15.2-01-unix.tar.gz</code></pre>
 </div>
 </div>
-<div class="sect3">
-<h4 id="_create_user_for_gitlab"><a class="anchor" href="#_create_user_for_gitlab"></a>Create User for Gitlab</h4>
-<div class="paragraph">
-<p>We need to create a user in Jenkins, such that when a JOBs executed by this user, when JOB is triggered by Webhooks from Gitlab.</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>Goto <code>Manager Jenkins</code> &#8594; <code>Manage Users</code> &#8594; <code>Create User</code> and add user details.</p>
-</li>
-</ul>
-</div>
-</div>
-<div class="sect3">
-<h4 id="_jenkins_to_gitlab_authentication"><a class="anchor" href="#_jenkins_to_gitlab_authentication"></a>Jenkins-to-GitLab authentication</h4>
-<div class="admonitionblock note">
+<div class="admonitionblock tip">
 <table>
 <tr>
 <td class="icon">
-<i class="fa icon-note" title="Note"></i>
+<i class="fa icon-tip" title="Tip"></i>
 </td>
 <td class="content">
-This auth configuration is only used for accessing the GitLab API for sending build status to GitLab. It is not used for cloning git repos. The credentials for cloning (usually SSH credentials) should be configured separately, in the git plugin. This plugin can be configured to send build status messages to GitLab, which show up in the GitLab Merge Request UI. To enable this functionality:
+Checkout for the latest version instead of 3.15
+</td>
+</tr>
+</table>
+</div>
+</li>
+<li>
+<p>Extract the file</p>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code>$ tar -xzvf nexus-3.15.2-01-unix.tar.gz</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Move the file to <code>/opt</code> directory.</p>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code>$ sudo mv nexus-3.15.2-01 /opt/nexus-server/nexus-3.15.2-01.</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Create user <code>nexus</code></p>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code>$ sudo addUser nexus</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Give sudo permission to user <code>nexus</code></p>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code>$ sudo usermod -aG sudo nexus</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Change the ownership of the directory.</p>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code>$ sudo chown nexus:nexus /opt/nexus-server</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>In  bin/nexus.rc  assign the user between the quotes in the line below.</p>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code>run_as_user="nexus"</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Create a file called <code>nexus.service</code>. Add the following contents, then save the file in the  <code>/etc/systemd/system/</code> directory:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code>[Unit]
+Description=nexus service
+After=network.target
+
+[Service]
+Type=forking
+LimitNOFILE=65536
+ExecStart=/opt/nexus-server/nexus-3.15.2-01/bin/nexus start
+ExecStop=/opt/nexus-server/nexus-3.15.2-01/bin/nexus stop
+User=nexus
+Restart=on-abort
+
+[Install]
+WantedBy=multi-user.target</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Activate the service with the following commands:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code>sudo systemctl daemon-reload
+sudo systemctl enable nexus.service
+sudo systemctl start nexus.service</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Default username and password is <code>admin</code> and <code>admin123</code> respectively with port beign 8081</p>
+</li>
+</ul>
+</div>
+<div class="sect3">
+<h4 id="_setup_maven_repository"><a class="anchor" href="#_setup_maven_repository"></a>Setup Maven Repository</h4>
+<div class="paragraph">
+<p>We will not create maven repository additionally, NEXUS comes with a default configuration for Maven with repositories.</p>
+</div>
+<div class="paragraph">
+<p>Following are the repositories created for maven.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>maven-releases</code>, for hosting your release artifacts locally.</p>
+</li>
+<li>
+<p><code>maven-snapshots</code>, for hosting your snapshot artifacts locally.</p>
+</li>
+<li>
+<p><code>maven-central</code>, a repository of type <code>proxy</code> that connects to central maven repository.</p>
+</li>
+<li>
+<p><code>maven-public</code>, a repository of type 'group` which holds the above repository, we connect to this repository from dev machine, the order of searching for artifacts as defined above.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_setup_docker_private_registry"><a class="anchor" href="#_setup_docker_private_registry"></a>Setup docker private registry</h4>
+<div class="paragraph">
+<p>By default, the Docker client communicates with the repo using HTTPS. Since I didn’t have the certificate, will use HTTP instead of HTTPS.</p>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+The Docker repo requires 2 different ports. We are going to use 8184 for pull from the proxy repo and 8185 for pull and push to the private repo of release and 8186 for pull and push of snapshots.
 </td>
 </tr>
 </table>
@@ -646,155 +691,235 @@ This auth configuration is only used for accessing the GitLab API for sending bu
 <div class="ulist">
 <ul>
 <li>
-<p>Create a new user in GitLab</p>
-</li>
-<li>
-<p>Give this user 'Developer' permissions on each repo you want Jenkins to send build status to</p>
-</li>
-<li>
-<p>Log in or 'Impersonate' that user in GitLab, click the user&#8217;s icon/avatar and choose Settings</p>
-</li>
-<li>
-<p>Click on 'Access Tokens'</p>
-</li>
-<li>
-<p>Create a token named e.g. 'jenkins' with 'api' scope; expiration is optional</p>
-</li>
-<li>
-<p>Copy the token immediately, it cannot be accessed after you leave this page</p>
-</li>
-<li>
-<p>On the Global Configuration page in Jenkins, in the GitLab configuration section, supply the GitLab host URL, e.g. <a href="http://your.gitlab.server" class="bare">http://your.gitlab.server</a></p>
-</li>
-<li>
-<p>Click the 'Add' button to add a credential, choose 'GitLab API token' as the kind of credential, and paste your GitLab user&#8217;s API key into the 'API token' field</p>
-</li>
-<li>
-<p>Click the 'Test Connection' button; it should succeed.</p>
-</li>
-</ul>
-</div>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_jenkins_to_gitlab_clone_authentication"><a class="anchor" href="#_jenkins_to_gitlab_clone_authentication"></a>Jenkins-to-Gitlab Clone AUthentication</h3>
+<p>Create a blob store.(optional)</p>
 <div class="paragraph">
-<p>We need to Add SSH key to enable Jenkins to clone repositories.</p>
+<p>Goto <code>settings</code> &#8594; <code>repository</code> &#8594; <code>Blob stores</code> &#8594; <code>Create blob store</code>, provide name of the location, path also can be customized.
+image::docker_blob_store_1.png[]</p>
+</div>
+</li>
+<li>
+<p>Create a private repository for releases</p>
+<div class="paragraph">
+<p>Goto <code>settings</code> &#8594; <code>repository</code> &#8594; <code>repositories</code> &#8594; <code>Create repository</code>, a repository recipe page pops up, select <code>docker(hosted)</code></p>
 </div>
 <div class="ulist">
 <ul>
 <li>
-<p>Generate SSH public/private key using below command</p>
-<div class="listingblock">
-<div class="content">
-<pre class="CodeRay highlight"><code>$ ssh-keygen -t rsa</code></pre>
-</div>
-</div>
+<p>Set name for the repository <code>docker-release</code></p>
 </li>
 <li>
-<p>Goto <code>Manage Jenkins</code> &#8594; <code>Configure Credentials</code> &#8594; <code>Credentials</code> &#8594; ` System` &#8594; <code>Global Credentials</code> &#8594; <code>Add Credentials</code></p>
+<p>Choose <code>HTTP</code> type and set port to 8185</p>
 </li>
 <li>
-<p>Select Kind as <code>ssh username with private key</code></p>
+<p>Set anonymous docker pull (optional)</p>
 </li>
 <li>
-<p>Set the username generate in previous section.</p>
+<p>Enable docker V1 API.</p>
 </li>
 <li>
-<p>Set <code>ID</code></p>
+<p>Select previously created blob store from the dropdown.</p>
 </li>
 <li>
-<p>Select option <code>private key enter directly</code> and add key from <code>cat ~/.ssh/id_rsa</code></p>
+<p>Deployment policy <code>Disable redeploy</code></p>
 </li>
 <li>
-<p>Provide pass phrase if you&#8217;ve added</p>
-</li>
-<li>
-<p>And click ok</p>
-</li>
-<li>
-<p>Now login to Gitlab with user created in previous section.</p>
-</li>
-<li>
-<p>On Top right corner click on User Avatar &#8594; Settings and then on 'SSH Keys'.</p>
-</li>
-<li>
-<p>Add the public key from output of <code>cat ~/.ssh/id_rsa/pub</code></p>
+<p>Cleanup policy <code>none</code>.</p>
 </li>
 </ul>
 </div>
-<div class="sect3">
-<h4 id="_create_project_and_configure_project_settings_in_gitlab"><a class="anchor" href="#_create_project_and_configure_project_settings_in_gitlab"></a>Create Project and configure project settings in Gitlab.</h4>
+</li>
+</ul>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="/home/kprasad/kpworkspace/kp_14012019/documentation/src/asciidoc/images/docker_release_repository_1.png" alt="docker release repository 1">
+</div>
+</div>
 <div class="ulist">
 <ul>
 <li>
-<p>Now create a sample Project with Jenkinsfile in Gitlab.</p>
+<p>Create a  cleanup policy</p>
+<div class="paragraph">
+<p>Goto <code>settings</code> &#8594; <code>repository</code> &#8594; <code>cleanup policies</code> &#8594; <code>create cleanup policy</code>. set name, format to 'docker` and criteria as <code>Last Downloaded before</code>.</p>
+</div>
+</li>
+</ul>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="/home/kprasad/kpworkspace/kp_14012019/documentation/src/asciidoc/images/docker_cleanup_policy_1.png" alt="docker cleanup policy 1">
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Create a private repository for snapshots</p>
+<div class="paragraph">
+<p>Goto <code>settings</code> &#8594; <code>repository</code> &#8594; <code>repositories</code> &#8594; <code>Create repository</code>, a repository recipe page pops up, select <code>docker(hosted)</code></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Set name for the repository <code>docker-snapshots</code></p>
+</li>
+<li>
+<p>Choose <code>HTTP</code> type and set port to 8186</p>
+</li>
+<li>
+<p>Set anonymous docker pull (optional)</p>
+</li>
+<li>
+<p>Enable docker V1 API.</p>
+</li>
+<li>
+<p>Select previously created blob store from the dropdown.</p>
+</li>
+<li>
+<p>Deployment policy <code>Allow redeploy</code></p>
+</li>
+<li>
+<p>Cleanup policy to previously created policy.</p>
+</li>
+</ul>
+</div>
+</li>
+</ul>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="/home/kprasad/kpworkspace/kp_14012019/documentation/src/asciidoc/images/docker_snapshots_repository_1.png" alt="docker snapshots repository 1">
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Create a proxy repository for docker hub</p>
+<div class="paragraph">
+<p>A repository that proxies everything you download from the official registry, Docker Hub. Next time you download the same dependency, it will be cached in your Nexus.</p>
+</div>
+<div class="paragraph">
+<p>Goto <code>settings</code> &#8594; <code>repository</code> &#8594; <code>repositories</code> &#8594; <code>Create repository</code>, a repository recipe page pops up, select <code>docker(proxy)</code></p>
+</div>
+<div class="paragraph">
+<p>Set primarily these parameters, name, remote storage(<code><a href="https://registry-1.docker.io" class="bare">https://registry-1.docker.io</a></code>), docker index to <code>docker hub</code></p>
+</div>
+</li>
+</ul>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="/home/kprasad/kpworkspace/kp_14012019/documentation/src/asciidoc/images/docker_repository_proxy_1.png" alt="docker repository proxy 1">
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Create Group Repository.</p>
+<div class="paragraph">
+<p>This will group all the above repos and provide you a single URL to configure your clients to download from to.</p>
+</div>
+<div class="paragraph">
+<p>Goto <code>settings</code> &#8594; <code>repository</code> &#8594; <code>repositories</code> &#8594; <code>Create repository</code>, a repository recipe page pops up, select <code>docker(group)</code></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Set name for the repository <code>docker-public</code></p>
+</li>
+<li>
+<p>Choose <code>HTTP</code> type and set port to 8184</p>
+</li>
+<li>
+<p>Set anonymous docker pull (optional)</p>
+</li>
+<li>
+<p>Enable docker V1 API.</p>
+</li>
+<li>
+<p>Select previously created blob store from the dropdown.</p>
+</li>
+<li>
+<p>Finally add <code>docker-release</code>, <code>docker-snapshots</code> and 'docker-hub` in order as shown below.</p>
+</li>
+</ul>
+</div>
+</li>
+</ul>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="/home/kprasad/kpworkspace/kp_14012019/documentation/src/asciidoc/images/docker_repository_group_1.png" alt="docker repository group 1">
+</div>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>To enable anonymous pull goto <code>settings</code> &#8594; <code>security</code> &#8594; <code>realms</code>, add <code>docker Bearer token Realm</code>.</p>
+</li>
+</ul>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="/home/kprasad/kpworkspace/kp_14012019/documentation/src/asciidoc/images/docker_bearer_realm_1.png" alt="docker bearer realm 1">
+</div>
+</div>
+<div class="sect4">
+<h5 id="_setup_dev_machine_to_use_http_protocol"><a class="anchor" href="#_setup_dev_machine_to_use_http_protocol"></a>Setup dev machine to use HTTP protocol.</h5>
+<div class="paragraph">
+<p>To interact with your repo, the first thing is to configure the Docker daemon in your machine to accept working with HTTP instead of HTTPS.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>If its ubuntu machine open/create <code>/etc/docker/daemon.json</code> add following details:</p>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight"><code>pipeline {
-    agent any
-
-    stages {
-        stage('Hello') {
-
-            steps {
-                echo "Hello from Jenkins pipeline"
-            }
-
-        }
-    }
+<pre class="CodeRay highlight"><code>{
+  "insecure-registries": [
+    "kp-ci:8184",
+    "kp-ci:8185",
+    "kp-ci:8186"
+  ],
+  "disable-legacy-registry": true
 }</code></pre>
 </div>
 </div>
 </li>
 <li>
-<p>Add Build User to the project with role <code>Developer</code></p>
-</li>
-<li>
-<p>Goto Jenkins Server and create new multibranch project say <code>k-sample-ci-project</code></p>
-</li>
-<li>
-<p>In Branch Sources section select <code>Git</code></p>
-</li>
-<li>
-<p>Provide the git clone URL of the Gitlab project. <code>git@localhost:k-projects/sample-ci-project.git</code></p>
-</li>
-<li>
-<p>Select Credentials as Git SSH User added in previous section.</p>
-</li>
-<li>
-<p>Click Save</p>
+<p>Restart docker daemon service.</p>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code>$ sudo systemctl restart docker</code></pre>
+</div>
+</div>
 </li>
 </ul>
 </div>
 </div>
-<div class="sect3">
-<h4 id="_adding_webhook"><a class="anchor" href="#_adding_webhook"></a>Adding Webhook.</h4>
+<div class="sect4">
+<h5 id="_create_user_with_deployment_privileges"><a class="anchor" href="#_create_user_with_deployment_privileges"></a>Create user with deployment privileges.</h5>
 <div class="ulist">
 <ul>
 <li>
-<p>Log in as that user (this is required even if you are a Jenkins admin user), then click on the user&#8217;s name in the top right corner of the page</p>
+<p>First we need to create custom role before creating a user, goto <code>settings</code> &#8594; <code>security</code> &#8594; <code>Roles</code> &#8594; <code>Create ROle</code> &#8658; <code>New ROle</code>. Add role Id and role name. and also and below list of privileges.</p>
+<div class="ulist">
+<ul>
+<li>
+<p>nx-blobstores-all</p>
 </li>
 <li>
-<p>Click <code>Configure</code> &#8594; <code>API Token</code> &#8594; <code>Add new Token</code> then 'generate', and note/copy the User ID and API Token</p>
+<p>nx-component-upload(most probably this should alone with view should suffice, though I did not test)</p>
 </li>
 <li>
-<p>Now goto Gitlab Project &#8594; <code>settings</code> &#8594; <code>Integration</code>  add the webhook <code><a href="http://localhost:8182/project/&lt;jenkins_project_name&gt" class="bare">http://localhost:8182/project/&lt;jenkins_project_name&gt</a>;</code>,  and api token from previous step. click the 'Test' button, and it should succeed and trigger a JOB.</p>
+<p>nx-repository-admin-<strong>-</strong>-*</p>
+</li>
+<li>
+<p>nx-repository-view-<strong>-</strong>-*</p>
 </li>
 </ul>
 </div>
-<div class="admonitionblock warning">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-warning" title="Warning"></i>
-</td>
-<td class="content">
-To prevent this type of exploitation from happening, starting with GitLab 10.6, all Webhook requests to the current GitLab instance server address and/or in a private network will be forbidden by default. That means that all requests made to 127.0.0.1, ::1 and 0.0.0.0, as well as IPv4 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16 and IPv6 site-local (ffc0::/10) addresses won’t be allowed.<br>
-This behavior can be overridden by enabling the option “Allow requests to the local network from hooks and services” in the “Outbound requests” section inside the Admin area under Settings (<code>/admin/application_settings/network</code>)
-</td>
-</tr>
-</table>
+</li>
+</ul>
 </div>
 </div>
 </div>
@@ -803,7 +928,7 @@ This behavior can be overridden by enabling the option “Allow requests to the 
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2019-04-07 23:08:09 IST
+Last updated 2019-04-08 01:31:11 IST
 </div>
 </div>
 </body>

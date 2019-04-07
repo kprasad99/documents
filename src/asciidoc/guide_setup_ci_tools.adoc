@@ -14,5 +14,7 @@ IMPORTANT: **Use jenkins user while adding user to docker group.**
 
 include::install_docker_ubuntu_18.04.adoc[]
 
+include::install_nexus_oss_ubuntu_18.04.adoc[]
+
 include::integrate_gitlab_and_jenkins.adoc[]
 

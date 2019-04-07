@@ -25,6 +25,7 @@
 *** Pipeline SCM API for Blue Ocean
 *** docker
 *** HTML Publisher
+*** Pipeline Utility Steps
 
 ==== Create User for Gitlab
 

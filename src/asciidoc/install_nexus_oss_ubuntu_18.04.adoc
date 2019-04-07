@@ -1,0 +1,192 @@
+== Install and setup NEXUS 3 on Ubuntu 18.04
+
+* Download the NEXUS package
++
+[sh]
+```
+$ wget https://sonatype-download.global.ssl.fastly.net/repository/repositoryManager/3/nexus-3.15.2-01-unix.tar.gz
+```
+TIP: Checkout for the latest version instead of 3.15
+
+* Extract the file
++
+[sh]
+```
+$ tar -xzvf nexus-3.15.2-01-unix.tar.gz
+```
+* Move the file to `/opt` directory.
++
+[sh]
+```
+$ sudo mv nexus-3.15.2-01 /opt/nexus-server/nexus-3.15.2-01.
+```
+* Create user `nexus`
++
+[sh]
+```
+$ sudo addUser nexus
+```
+* Give sudo permission to user `nexus`
++
+[sh]
+```
+$ sudo usermod -aG sudo nexus 
+```
+* Change the ownership of the directory.
++
+[sh]
+```
+$ sudo chown nexus:nexus /opt/nexus-server 
+```
+* In  bin/nexus.rc  assign the user between the quotes in the line below.
++
+[sh]
+```
+run_as_user="nexus"
+```
+* Create a file called `nexus.service`. Add the following contents, then save the file in the  `/etc/systemd/system/` directory:
++
+[sh]
+```
+[Unit]
+Description=nexus service
+After=network.target
+  
+[Service]
+Type=forking
+LimitNOFILE=65536
+ExecStart=/opt/nexus-server/nexus-3.15.2-01/bin/nexus start
+ExecStop=/opt/nexus-server/nexus-3.15.2-01/bin/nexus stop
+User=nexus
+Restart=on-abort
+  
+[Install]
+WantedBy=multi-user.target
+```
+* Activate the service with the following commands:
++
+[sh]
+```
+sudo systemctl daemon-reload
+sudo systemctl enable nexus.service
+sudo systemctl start nexus.service
+```
+* Default username and password is `admin` and `admin123` respectively with port beign 8081
+
+==== Setup Maven Repository
+
+We will not create maven repository additionally, NEXUS comes with a default configuration for Maven with repositories.
+
+Following are the repositories created for maven.
+
+*** `maven-releases`, for hosting your release artifacts locally.
+*** `maven-snapshots`, for hosting your snapshot artifacts locally.
+*** `maven-central`, a repository of type `proxy` that connects to central maven repository.
+*** `maven-public`, a repository of type 'group` which holds the above repository, we connect to this repository from dev machine, the order of searching for artifacts as defined above.
+
+==== Setup docker private registry
+
+By default, the Docker client communicates with the repo using HTTPS. Since I didn’t have the certificate, will use HTTP instead of HTTPS.
+
+IMPORTANT: The Docker repo requires 2 different ports. We are going to use 8184 for pull from the proxy repo and 8185 for pull and push to the private repo of release and 8186 for pull and push of snapshots.
+
+* Create a blob store.(optional)
++
+Goto `settings` -> `repository` -> `Blob stores` -> `Create blob store`, provide name of the location, path also can be customized.
+image::docker_blob_store_1.png[] 
+* Create a private repository for releases
++
+Goto `settings` -> `repository` -> `repositories` -> `Create repository`, a repository recipe page pops up, select `docker(hosted)`
+
+** Set name for the repository `docker-release`
+** Choose `HTTP` type and set port to 8185
+** Set anonymous docker pull (optional)
+** Enable docker V1 API.
+** Select previously created blob store from the dropdown.
+** Deployment policy `Disable redeploy`
+** Cleanup policy `none`.
+
+image::docker_release_repository_1.png[] 
+
+* Create a  cleanup policy
++
+Goto `settings` -> `repository` -> `cleanup policies` -> `create cleanup policy`. set name, format to 'docker` and criteria as `Last Downloaded before`. 
+
+image::docker_cleanup_policy_1.png[]
+
+* Create a private repository for snapshots
++
+Goto `settings` -> `repository` -> `repositories` -> `Create repository`, a repository recipe page pops up, select `docker(hosted)`
+
+** Set name for the repository `docker-snapshots`
+** Choose `HTTP` type and set port to 8186
+** Set anonymous docker pull (optional)
+** Enable docker V1 API.
+** Select previously created blob store from the dropdown.
+** Deployment policy `Allow redeploy`
+** Cleanup policy to previously created policy.
+
+image::docker_snapshots_repository_1.png[]
+
+* Create a proxy repository for docker hub
++
+A repository that proxies everything you download from the official registry, Docker Hub. Next time you download the same dependency, it will be cached in your Nexus.
++
+Goto `settings` -> `repository` -> `repositories` -> `Create repository`, a repository recipe page pops up, select `docker(proxy)`
++
+Set primarily these parameters, name, remote storage(`https://registry-1.docker.io`), docker index to `docker hub`
+
+image::docker_repository_proxy_1.png[]
+
+* Create Group Repository.
++
+This will group all the above repos and provide you a single URL to configure your clients to download from to.
++
+Goto `settings` -> `repository` -> `repositories` -> `Create repository`, a repository recipe page pops up, select `docker(group)`
+
+** Set name for the repository `docker-public`
+** Choose `HTTP` type and set port to 8184
+** Set anonymous docker pull (optional)
+** Enable docker V1 API.
+** Select previously created blob store from the dropdown.
+** Finally add `docker-release`, `docker-snapshots` and 'docker-hub` in order as shown below.
+
+image::docker_repository_group_1.png[]
+ 
+* To enable anonymous pull goto `settings` -> `security` -> `realms`, add `docker Bearer token Realm`.
+
+image::docker_bearer_realm_1.png[]
+
+===== Setup dev machine to use HTTP protocol.
+
+To interact with your repo, the first thing is to configure the Docker daemon in your machine to accept working with HTTP instead of HTTPS.
+
+* If its ubuntu machine open/create `/etc/docker/daemon.json` add following details:
++
+[json]
+```
+{
+  "insecure-registries": [
+    "kp-ci:8184",
+    "kp-ci:8185",
+    "kp-ci:8186"
+  ],
+  "disable-legacy-registry": true
+}
+```
+
+* Restart docker daemon service.
++
+[sh]
+```
+$ sudo systemctl restart docker
+```
+
+===== Create user with deployment privileges.
+
+* First we need to create custom role before creating a user, goto `settings` -> `security` -> `Roles` -> `Create ROle` => `New ROle`. Add role Id and role name. and also and below list of privileges.
+
+*** nx-blobstores-all
+*** nx-component-upload(most probably this should alone with view should suffice, though I did not test)
+*** nx-repository-admin-*-*-*
+*** nx-repository-view-*-*-*

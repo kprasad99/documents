@@ -1,0 +1,53 @@
+== Steps to Integrate Jenkins with Gitlab 
+
+The below steps details, how to build maven project( specifically a spring boot project) and create a image out of it and publish the image to NEXUS.
+
+A sample spring boot project with Jenkins declarative pipeline and Dockerfile can be accessed from https://github.com/kprasad99/documents.git[here]  
+
+Import the above project to gitlab server directly and configure the project detailed through in previous section to integrate gitlab and Jenkins.
+
+TIP: Make sure while setting up webhook to select the trigger when merge request is created.
+
+===== Add NEXUS deployer credentials.
+
+Goto `manage jenkins` -> `configure credentials` -> `credentials` -> `system` -> `global credentials` -> `Add credentials`. choose kind username and password and add all details.
+
+IMPORTANT: set the id to `Deployer` as it is hardcoded to Jenkinsfile.(The hardcode is required since we will be using multiple docker registry for release and snapshots. If a single registry is used we can directly configure the
+docker registry url and credentials in `configure system` -> `docker` section.)
+
+===== Add Environment variables related to docker registry.
+
+Goto `manage jenkins` -> `configure system`, environment section. add below environment variables. 
+
+[options="List of Environment Variables",cols="1,1"]
+|===
+|Field   |Value   
+//-------------
+|DOCKER_RELEASE_REGISTRY   | kp-ci:8185   
+|DOCKER_RELEASE_REGISTRY_URL   | http://kp-ci:8185/   
+|DOCKER_SNAPSHOTS_REGISTRY   | kp-ci:8186
+|DOCKER_SNAPSHOTS_REGISTRY_URL   | http://kp-ci:8185/
+|===
+
+NOTE: We are configuring here release and snapshot registry urls.
+
+==== Testing.
+
+* Clone the project from the gitlab.
+* Make any dummy change.
+* Push the changes to gitlab.
+* A Jenkins job should get triggered as soon as you pushed the changes to Gitlab.
+* Create a merge request.
+* Merge the change.
+* Another Jenkins job should get triggered as soon as merged to master.
+* At the end of the job a docker image must be pushed to NEXUS.
+* Now use below command to pull the image and run the container.
++
+[sh]
+```
+$ docker pull kp-ci:8184/apps/k-ci-sample
+```
+
+TIP: Here we are using public port to access the image not release/snapshot port.
+
+IMPORTANT: Job might fail while running stage build images with error message related to version security issue. Goto `manage jenkins` -> `In-proccess script approval`, approve any pending approvals.

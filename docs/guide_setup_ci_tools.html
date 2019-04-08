@@ -554,6 +554,13 @@ table.CodeRay td.code>pre{padding:0}
 <li><a href="#_jenkins_to_gitlab_clone_authentication">Jenkins-to-Gitlab Clone AUthentication</a></li>
 </ul>
 </li>
+<li><a href="#_steps_to_integrate_jenkins_with_gitlab">Steps to Integrate Jenkins with Gitlab</a>
+<ul class="sectlevel4">
+<li><a href="#_add_nexus_deployer_credentials">Add NEXUS deployer credentials.</a></li>
+<li><a href="#_add_environment_variables_related_to_docker_registry">Add Environment variables related to docker registry.</a></li>
+<li><a href="#_testing">Testing.</a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -1875,10 +1882,164 @@ This behavior can be overridden by enabling the option “Allow requests to the 
 </div>
 </div>
 </div>
+<div class="sect1">
+<h2 id="_steps_to_integrate_jenkins_with_gitlab"><a class="anchor" href="#_steps_to_integrate_jenkins_with_gitlab"></a>Steps to Integrate Jenkins with Gitlab</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The below steps details, how to build maven project( specifically a spring boot project) and create a image out of it and publish the image to NEXUS.</p>
+</div>
+<div class="paragraph">
+<p>A sample spring boot project with Jenkins declarative pipeline and Dockerfile can be accessed from <a href="https://github.com/kprasad99/documents.git">here</a></p>
+</div>
+<div class="paragraph">
+<p>Import the above project to gitlab server directly and configure the project detailed through in previous section to integrate gitlab and Jenkins.</p>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+Make sure while setting up webhook to select the trigger when merge request is created.
+</td>
+</tr>
+</table>
+</div>
+<div class="sect4">
+<h5 id="_add_nexus_deployer_credentials"><a class="anchor" href="#_add_nexus_deployer_credentials"></a>Add NEXUS deployer credentials.</h5>
+<div class="paragraph">
+<p>Goto <code>manage jenkins</code> &#8594; <code>configure credentials</code> &#8594; <code>credentials</code> &#8594; <code>system</code> &#8594; <code>global credentials</code> &#8594; <code>Add credentials</code>. choose kind username and password and add all details.</p>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+set the id to <code>Deployer</code> as it is hardcoded to Jenkinsfile.(The hardcode is required since we will be using multiple docker registry for release and snapshots. If a single registry is used we can directly configure the
+docker registry url and credentials in <code>configure system</code> &#8594; <code>docker</code> section.)
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect4">
+<h5 id="_add_environment_variables_related_to_docker_registry"><a class="anchor" href="#_add_environment_variables_related_to_docker_registry"></a>Add Environment variables related to docker registry.</h5>
+<div class="paragraph">
+<p>Goto <code>manage jenkins</code> &#8594; <code>configure system</code>, environment section. add below environment variables.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 50%;">
+<col style="width: 50%;">
+</colgroup>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Field</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Value</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DOCKER_RELEASE_REGISTRY</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">kp-ci:8185</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DOCKER_RELEASE_REGISTRY_URL</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="http://kp-ci:8185/" class="bare">http://kp-ci:8185/</a></p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DOCKER_SNAPSHOTS_REGISTRY</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">kp-ci:8186</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DOCKER_SNAPSHOTS_REGISTRY_URL</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><a href="http://kp-ci:8185/" class="bare">http://kp-ci:8185/</a></p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+We are configuring here release and snapshot registry urls.
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_testing"><a class="anchor" href="#_testing"></a>Testing.</h4>
+<div class="ulist">
+<ul>
+<li>
+<p>Clone the project from the gitlab.</p>
+</li>
+<li>
+<p>Make any dummy change.</p>
+</li>
+<li>
+<p>Push the changes to gitlab.</p>
+</li>
+<li>
+<p>A Jenkins job should get triggered as soon as you pushed the changes to Gitlab.</p>
+</li>
+<li>
+<p>Create a merge request.</p>
+</li>
+<li>
+<p>Merge the change.</p>
+</li>
+<li>
+<p>Another Jenkins job should get triggered as soon as merged to master.</p>
+</li>
+<li>
+<p>At the end of the job a docker image must be pushed to NEXUS.</p>
+</li>
+<li>
+<p>Now use below command to pull the image and run the container.</p>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code>$ docker pull kp-ci:8184/apps/k-ci-sample</code></pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+Here we are using public port to access the image not release/snapshot port.
+</td>
+</tr>
+</table>
+</div>
+<div class="admonitionblock important">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-important" title="Important"></i>
+</td>
+<td class="content">
+Job might fail while running stage build images with error message related to version security issue. Goto <code>manage jenkins</code> &#8594; <code>In-proccess script approval</code>, approve any pending approvals.
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+</div>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2019-04-08 01:32:33 IST
+Last updated 2019-04-08 22:05:19 IST
 </div>
 </div>
 </body>

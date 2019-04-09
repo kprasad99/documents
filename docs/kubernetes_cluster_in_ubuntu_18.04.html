@@ -542,6 +542,7 @@ table.CodeRay td.code>pre{padding:0}
 <li><a href="#_configure_master_vm">Configure Master VM.</a></li>
 <li><a href="#_configure_kubernetes_dashboad">Configure Kubernetes Dashboad.</a></li>
 <li><a href="#_configuration_slave_node">Configuration slave node.</a></li>
+<li><a href="#_install_helm">Install Helm</a></li>
 </ul>
 </li>
 </ul>
@@ -653,18 +654,6 @@ table.CodeRay td.code>pre{padding:0}
 </tr>
 </tbody>
 </table>
-<div class="admonitionblock important">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-important" title="Important"></i>
-</td>
-<td class="content">
-while creating disk partition do not select partition with LVM.
-</td>
-</tr>
-</table>
-</div>
 </div>
 </div>
 <div class="sect1">
@@ -820,7 +809,7 @@ while creating disk partition do not select partition with LVM.
 <p>Add Kubernetes source gpg.</p>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight nowrap"><code data-lang="shell">$ curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add</code></pre>
+<pre class="CodeRay highlight nowrap"><code data-lang="shell">$ curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -</code></pre>
 </div>
 </div>
 </li>
@@ -873,6 +862,45 @@ If 4 and 5 steps not followed, kubelet service will not start.
 </td>
 </tr>
 </table>
+</div>
+</li>
+<li>
+<p>Add private ip to kubernetes arguments</p>
+<div class="paragraph">
+<p>While installing you might get error related to port forwarding if you are using private IP which is true in our case. To resolve this issue,
+Create file <code>/etc/default/kubelet</code> and following content in the file.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code>KUBELET_EXTRA_ARGS=--node-ip=192.168.56.10</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Use systemd for cgroups.</p>
+<div class="paragraph">
+<p>Create file <code>/etc/docker/daemon.json</code> and add following content.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code>{
+  "exec-opts": ["native.cgroupdriver=systemd"],
+  "log-driver": "json-file",
+  "log-opts": {
+    "max-size": "100m"
+  },
+  "storage-driver": "overlay2"
+}</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Reload configuration and restart docker service.</p>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code>sudo systemctl daemon-reload
+sudo systemctl restart docker</code></pre>
+</div>
 </div>
 </li>
 <li>
@@ -1193,12 +1221,83 @@ k8s-s1       Ready    &lt;none&gt;   2m49s   v1.13.2</code></pre>
 </ol>
 </div>
 </div>
+<div class="sect2">
+<h3 id="_install_helm"><a class="anchor" href="#_install_helm"></a>Install Helm</h3>
+<div class="paragraph">
+<p>Helm package manager consists of helm client and tiller component which runs as pod on k8s. We will install helm client on our master server itself.</p>
+</div>
+<div class="sect3">
+<h4 id="_install_helm_client"><a class="anchor" href="#_install_helm_client"></a>Install helm client.</h4>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Install helm client using snap on master server using below command.</p>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code>$ sudo snap install helm --classic</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Verify helm client is running by executing command <code>helm version</code>, it should give version details for client and for server side should return error until we install tiller.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_install_tiller"><a class="anchor" href="#_install_tiller"></a>Install Tiller.</h4>
+<div class="paragraph">
+<p>Before installing tiller we need to create RBAC for the tiller pod.</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Create service account for tiller.</p>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code>kubectl -n kube-system create serviceaccount tiller</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Provide cluster role for the above service account.</p>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code>kubectl create clusterrolebinding tiller \
+   --clusterrole cluster-admin \
+   --serviceaccount=kube-system:tiller</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Now create tiller using the service account</p>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code>helm init --service-account tiller</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Wait until tiller pod comes up.</p>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code>kubectl get po --all-namespaces --watch</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Once tiller pod is up run <code>helm version</code>, the output provide version details for both client and server.</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
 </div>
 </div>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2019-01-23 02:05:06 IST
+Last updated 2019-04-10 01:49:58 IST
 </div>
 </div>
 </body>

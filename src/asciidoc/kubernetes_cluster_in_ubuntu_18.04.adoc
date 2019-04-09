@@ -47,7 +47,6 @@ Create two VMs k8s-master and k8s-s1 as shown in below diagram.
 |Network Adapter-2      | NAT   
 |===
 
-IMPORTANT: while creating disk partition do not select partition with LVM.
 
 == Prepare Servers
 	
@@ -156,7 +155,7 @@ Execute the below steps on both the VMs.
 +
 [source, shell,options="nowrap"]
 ----
-$ curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add
+$ curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
 ----
 . Next add kubernetes repository 
 +
@@ -180,7 +179,42 @@ $ sudo swapoff -a
 . Commanent out any line containing swap in `/etc/fstab`
 +
 IMPORTANT:  If 4 and 5 steps not followed, kubelet service will not start.
-	
+
+. Add private ip to kubernetes arguments
++
+While installing you might get error related to port forwarding if you are using private IP which is true in our case. To resolve this issue,
+Create file `/etc/default/kubelet` and following content in the file.
++
+[sh]
+```
+KUBELET_EXTRA_ARGS=--node-ip=192.168.56.10
+```
+
+. Use systemd for cgroups.
++
+Create file `/etc/docker/daemon.json` and add following content.
++
+[json]
+```
+{
+  "exec-opts": ["native.cgroupdriver=systemd"],
+  "log-driver": "json-file",
+  "log-opts": {
+    "max-size": "100m"
+  },
+  "storage-driver": "overlay2"
+}
+
+```
+
+. Reload configuration and restart docker service.
++
+[sh]
+```
+sudo systemctl daemon-reload
+sudo systemctl restart docker
+```
+
 . Reboot VMs.
 
 === Configure Master VM.
@@ -406,3 +440,50 @@ k8s-s1       Ready    <none>   2m49s   v1.13.2
 ----
 
 
+=== Install Helm
+
+Helm package manager consists of helm client and tiller component which runs as pod on k8s. We will install helm client on our master server itself.
+
+==== Install helm client.
+
+. Install helm client using snap on master server using below command.
++
+[sh]
+```
+$ sudo snap install helm --classic
+```
+
+. Verify helm client is running by executing command `helm version`, it should give version details for client and for server side should return error until we install tiller.
+
+==== Install Tiller.
+
+Before installing tiller we need to create RBAC for the tiller pod.
+
+. Create service account for tiller.
++
+[sh]
+```
+kubectl -n kube-system create serviceaccount tiller
+```
+. Provide cluster role for the above service account.
++
+[sh]
+```
+kubectl create clusterrolebinding tiller \
+   --clusterrole cluster-admin \
+   --serviceaccount=kube-system:tiller
+```
+. Now create tiller using the service account 
++
+[sh]
+```
+helm init --service-account tiller
+```
+
+. Wait until tiller pod comes up.
++
+[sh]
+```
+kubectl get po --all-namespaces --watch
+```
+. Once tiller pod is up run `helm version`, the output provide version details for both client and server.

@@ -486,4 +486,35 @@ helm init --service-account tiller
 ```
 kubectl get po --all-namespaces --watch
 ```
-. Once tiller pod is up run `helm version`, the output provide version details for both client and server.
+. Once tiller pod is up, run `helm version`, the output provide version details for both client and server.
+
+=== Install Ingress controller
+
+Optionally if you want to expose Any API/web application install ingress controllers such as NGINX, traefik etc.
+
+====== Install Traefik Ingress controller.
+
+. Execute below helm command to install traefik ingress.
++
+[sh]
+```
+$ helm install --name treafik-ingress --namespace kube-system  --set dashboard.enabled=true --set rbac.enabled=true stable/traefik
+```
+
+====== Installing NGINX ingress controller.
+
+. Execute below helm command to install nginx ingress.
++
+[sh]
+```
+$ helm install stable/nginx-ingress --name nginx-ingress --set rbac.create=true
+```
+
+==== References
+
+https://github.com/helm/charts/tree/master/stable/traefik - traefik
+
+https://github.com/helm/charts/tree/master/stable/nginx-ingress - nginx
+
+https://kubernetes.io/docs/concepts/services-networking/ingress/ - ingress controller concepts
+

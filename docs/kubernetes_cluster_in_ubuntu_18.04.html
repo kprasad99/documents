@@ -543,6 +543,7 @@ table.CodeRay td.code>pre{padding:0}
 <li><a href="#_configure_kubernetes_dashboad">Configure Kubernetes Dashboad.</a></li>
 <li><a href="#_configuration_slave_node">Configuration slave node.</a></li>
 <li><a href="#_install_helm">Install Helm</a></li>
+<li><a href="#_install_ingress_controller">Install Ingress controller</a></li>
 </ul>
 </li>
 </ul>
@@ -1286,9 +1287,57 @@ k8s-s1       Ready    &lt;none&gt;   2m49s   v1.13.2</code></pre>
 </div>
 </li>
 <li>
-<p>Once tiller pod is up run <code>helm version</code>, the output provide version details for both client and server.</p>
+<p>Once tiller pod is up, run <code>helm version</code>, the output provide version details for both client and server.</p>
 </li>
 </ol>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_install_ingress_controller"><a class="anchor" href="#_install_ingress_controller"></a>Install Ingress controller</h3>
+<div class="paragraph">
+<p>Optionally if you want to expose Any API/web application install ingress controllers such as NGINX, traefik etc.</p>
+</div>
+<div class="sect5">
+<h6 id="_install_traefik_ingress_controller"><a class="anchor" href="#_install_traefik_ingress_controller"></a>Install Traefik Ingress controller.</h6>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Execute below helm command to install traefik ingress.</p>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code>$ helm install --name treafik-ingress --namespace kube-system  --set dashboard.enabled=true --set rbac.enabled=true stable/traefik</code></pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect5">
+<h6 id="_installing_nginx_ingress_controller"><a class="anchor" href="#_installing_nginx_ingress_controller"></a>Installing NGINX ingress controller.</h6>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Execute below helm command to install nginx ingress.</p>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code>$ helm install stable/nginx-ingress --name nginx-ingress --set rbac.create=true</code></pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_references"><a class="anchor" href="#_references"></a>References</h4>
+<div class="paragraph">
+<p><a href="https://github.com/helm/charts/tree/master/stable/traefik" class="bare">https://github.com/helm/charts/tree/master/stable/traefik</a> - traefik</p>
+</div>
+<div class="paragraph">
+<p><a href="https://github.com/helm/charts/tree/master/stable/nginx-ingress" class="bare">https://github.com/helm/charts/tree/master/stable/nginx-ingress</a> - nginx</p>
+</div>
+<div class="paragraph">
+<p><a href="https://kubernetes.io/docs/concepts/services-networking/ingress/" class="bare">https://kubernetes.io/docs/concepts/services-networking/ingress/</a> - ingress controller concepts</p>
 </div>
 </div>
 </div>
@@ -1297,7 +1346,7 @@ k8s-s1       Ready    &lt;none&gt;   2m49s   v1.13.2</code></pre>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2019-04-10 01:49:58 IST
+Last updated 2019-04-11 00:04:59 IST
 </div>
 </div>
 </body>

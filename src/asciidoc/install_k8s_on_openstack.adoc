@@ -1,0 +1,582 @@
+= Install Kubernetes on Openstack VMs
+
+:data-uri:
+:imagesdir: images
+
+Steps detailing how to install kubernetes on VMs provisioned by openstack.
+
+=== Prerequisite
+
+We shall be using vmware workstation instead of virtualbox, the reason being since virtual box
+does not virtualization parameters to openstack VMs, the VMs response is slow,  the `kubeadm init`
+fails with crash-loop
+
+Here we will be installing kubernetes manually on openstack VMs, we will not be using openstack components 
+magnum and octivia for provisioning K8s on openstack.
+
+We shall be using devstack instead of installation using standard individual components
+
+include::vm_creation_vw.adoc[]
+
+=== Configure bridge interface
+
+We need to configure bridge interface to come up/down with no ip address.
+
+. Execute below command and note down the interface name that maps to bridge network.
++
+[source,sh]
+```
+$ ifconfig -a
+```
+. Create a new file `/etc/systemd/system/manual-iface.service` and copy the below configuration
++
+[source,conf]
+```
+[Unit]
+Description=Service to bring up/down unconfigured nic ens34 // <1>
+After=network.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/sbin/ip link set ens34 up // <1>
+ExecStop=/sbin/ip link set ens34 down // <1>
+
+[Install]
+WantedBy=multi-user.target
+```
+<1> Replace the interface with bridge interface
+
+. Enable the service.
++
+[source,sh]
+```
+$ sudo systemctl enable manual-iface.service
+```
+
+. Start the service.
++
+[source,sh]
+```
+$ sudo systemctl start manual-iface.service
+```
+
+. Now executing below command shall list the interface.
++
+[source,sh]
+```
+$ ifconfig
+```
+
+=== Install devstack
+
+We will be using stein release( which is the last stable release while writing this documentation)
+
+. Change directory to `/opt`
++
+[source,sh]
+```
+$ cd /opt
+```
+
+. clone devstack git repository 
++
+[source,sh]
+```
+$ sudo git clone https://github.com/openstack/devstack.git -b stable/stein
+```
+
+. change directory ownership
++
+[source,sh]
+```
+$ sudo chown ${USER}:${USER}
+```
+
+. change directory to `devstack`
++
+[source,sh]
+```
+$ cd devstack
+```
+
+. Download the local.conf.
++
+[source,sh]
+```
+$ wget -c  https://gist.githubusercontent.com/kprasad99/f4cfa3ef7e2548685c9f7e214046f071/raw/040eeff5ed2aea89d3e1f84724fd6280e2691f1a/local.k8s.conf \
+	   -O local.conf
+```
++
+IMPORTANT: Replace values of `HOST_IP` and `FLAT_INTERFACE` according to your system settings
+
+. Follow the steps described https://docs.openstack.org/devstack/stein/guides/devstack-with-nested-kvm.html#configure-nested-kvm-for-intel-based-machines[here] and
+validate `nested-kvm` is enabled
+
+. Execute installation script.
++ 
+[source,sh]
+```
+$ ./stack.sh
+```
+
+Installation process will take quite time first time, if fails run `./unstack.sh` and `./clean.sh` and then rerun `./stack.sh`
+
+Once installation proccess completes, you will see output something as shown below, you can use the url provided in output
+to explore using UI.
+
+[source,sh]
+```
+=========================
+DevStack Component Timing
+ (times are in seconds)
+=========================
+run_process           43
+test_with_retry        3
+apt-get-update         3
+osc                  127
+wait_for_service      23
+git_timed            334
+dbsync                76
+pip_install          457
+apt-get              864
+-------------------------
+Unaccounted time     1624
+=========================
+Total runtime        3554
+
+
+
+This is your host IP address: 192.168.58.20
+This is your host IPv6 address: ::1
+Horizon is now available at http://192.168.58.20/dashboard // <1>
+Keystone is serving at http://192.168.58.20/identity/
+The default users are: admin and demo // <2>
+The password: openstack123 // <3>
+
+WARNING:
+Using lib/neutron-legacy is deprecated, and it will be removed in the future
+
+
+Services are running under systemd unit files.
+For more information see:
+https://docs.openstack.org/devstack/latest/systemd.html
+
+
+```
+<1> Dashboard URL to explore openstack UI
+<2> by default to user are created by devstack.
+<3> Both users have same password
+
+=== Provision K8s VMs
+
+We shall bring two servers on the openstack which would be part of k8s cluster
+
+We shall install ubuntu cloud image for VMs, you can download ubuntu 18.04 cloud image 
+from https://cloud-images.ubuntu.com)[here]
+
+==== Admin Tasks
+
+Below configuration need to be performed using `admin` user.
+
+. Load admin credentials.
++
+[source,sh]
+```
+$ source /opt/devstack/openrc admin
+```
+
+. Create a custom flavour
++
+[source,sh]
+```
+$ openstack flavor create --ram 7168 --disk 15 --vcpus 2 7G15G
+```
++
+[NOTE]
+====
+instead of creating custom flavour, you can run below command and use one of the flavor
+already configured by devstack
+```
+$ openstack flavor list
+```
+====
+
+. Upload ubuntu.18.04 cloud image to glance.
++
+[source,sh]
+```
+$ openstack image create --disk-format qcow2 \
+    --file images/bionic-server-cloudimg-amd64.img \
+    --min-disk 10 \
+    --min-ram 4096 \
+    --public ubuntu.18.04
+```
++
+IMPORTANT: change the file path to the location of ubuntu cloud image download location
+
+. Allocate two floating ips to project demo by executing below command twice.
++
+[source,sh]
+```
+$ openstack floating ip create public --project demo
+```
+
+==== Project Task
+
+We will be creating k8s cluster under project demo. 
+
+. Load demo credentials.
++
+[source,sh]
+```
+$ source /opt/devstack/openrc demo
+```
+
+. (Optional) Create directory to store pem file.
++
+[source,sh]
+```
+$ mkdir vm_ssh_keys
+```
+
+. Create ssh keypair, so that we can login to VM, by default ubuntu cloud image doesn't ship
+with passwrod login, we need to use ssh first time to login VM.
++
+[source,sh]
+```
+$ openstack keypair create k-ssh > vm_ssh_keys/k8s.priv
+```
+
+. Change file permission else we would get login permission denied error.
++
+[source,sh]
+```
+$ chmod 400 vm_ssh_keys/k8s.priv
+```
+
+. Execute below set of commands to create custom security group which enable ssh and icmp(optional) ports
+from external source.
++
+[source,sh]
+```
+openstack security group create k-sg
+openstack security group rule create --protocol icmp --egress k-sg
+openstack security group rule create --protocol icmp --ingress k-sg
+openstack security group rule create --protocol tcp --dst-port 22 --ingress k-sg
+```
+
+. Now create two VMs. namely k8s-master and k8s-s1
++
+[source,sh]
+```
+$ openstack server create --image ubuntu.18.04 \
+    --flavor 7G15G --network private \
+    --security-group k-sg  \
+    --key-name k-ssh k8s-master
+$ openstack server create --image ubuntu.18.04 \
+    --flavor 7G15G --network private \
+    --security-group k-sg  \
+    --key-name k-ssh k8s-s1
+```
+
+. You can check the server status be executing below command
++
+[source,sh]
+```
+$ openstack server list
+
+//or
+
+$ openstack server show k8s-master
+```
+
+. Assign floating ip to VM.
+
+.. Execute below command and note down the private ip.
++
+[source,sh]
+```
+$ openstack server list
+```
+.. Execute below command and note down the port ids corresponding to private ip
++
+[source,sh]
+```
+$ openstack port list
+```
+	
+.. Execute below command to list floating ip.
++
+[source,sh]
+```
+$ openstack floating ip list
+```
+	
+.. Now use port id to be associate the floating ip
++
+[source,sh]
+```
+$ openstack floating ip set 192.168.1.246 \
+    --port 41c4bb1c-d146-4d5c-91a1-db70856d1820 
+```
++
+Repeat above step to assign floating ip to other machine as well.
+
+. SSH to VM.
++
+[source,sh]
+```
+$ ssh -i vm_ssh_keys/k8s.priv ubuntu@192.168.1.246
+```
+
+=== Install and configure Kubernetes cluster
+
+include::kubernetes_cluster_in_ubuntu_18.04.adoc[tags=packageUpdate]
+
+==== Install Docker
+include::kubernetes_cluster_in_ubuntu_18.04.adoc[tags=installDocker]
+
+==== Prepare server
+NOTE: You can skip step 6.
+
+include::kubernetes_cluster_in_ubuntu_18.04.adoc[tags=prepareServer]
+
+. Disable port security for communication within subnet.
++
+[source,sh]
+```
+$ openstack security group rule create --protocol any \
+    --remote-ip 10.11.12.0/24 --ingress k-sg
+```
+. Configure node port to be accessed from external network.
++
+[source,sh]
+```
+$ openstack security group rule create --protocol tcp 
+    --dst-port 30000:32767  --ingress k-sg
+```
+
+==== Configure Master VM.
+
+. Initialize kubernetes master node by executing below command.
++
+[source%autofit, shell,options="nowrap"]
+----
+$ sudo kubeadm init --pod-network-cidr=10.244.0.0/16
+----
+
+. As output of above command shows to execute below command, run below command to update auth details
+for `kubectl` command.
++
+[source, shell,options="nowrap"]
+----
+$ mkdir -p $HOME/.kube
+$ sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+$ sudo chown $(id -u):$(id -g) $HOME/.kube/config
+----	
+
+. Note(copy to textpad) the `kubeadm` join command which needs to be executed on slave nodes to join to the cluster
+
+. Install pod network.
++
+[source%autofit, shell,options="nowrap"]
+----
+$ kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
+----	
+. Verify all necessary pods are started
++
+[source, shell,options="nowrap"]
+----
+$ kubectl get pods --all-namespaces
+----
++
+.output:
+[source%autofit, shell,options="nowrap"]
+----	
+NAMESPACE     NAME                                 READY   STATUS    RESTARTS   AGE
+kube-system   coredns-86c58d9df4-c68gd             1/1     Running   0          6m41s
+kube-system   coredns-86c58d9df4-q5bht             1/1     Running   0          6m41s
+kube-system   etcd-k8s-master                      1/1     Running   0          6m6s
+kube-system   kube-apiserver-k8s-master            1/1     Running   0          5m59s
+kube-system   kube-controller-manager-k8s-master   1/1     Running   0          5m56s
+kube-system   kube-flannel-ds-amd64-stb29          1/1     Running   0          49s
+kube-system   kube-proxy-882ms                     1/1     Running   0          6m41s
+kube-system   kube-scheduler-k8s-master            1/1     Running   0          5m54s
+----
+
+==== Configuration slave node.
+
+. Now go to slave node and execute the join command previously saved when you were executing kubeadm on master.
++
+[source%autofit, shell,options="nowrap"]
+----
+$  kubeadm join 192.168.56.10:6443 --token t0j1zi.v5lojsnpjh9r0rbn \
+       --discovery-token-ca-cert-hash sha256:40b1142d9002003ab5b085776b8b8cba4a41ceaafab06429c49eaedc2b2939fa
+----
++
+NOTE: The above command is sample, the values are dynamically generated.
+	
+. Now go back to master and execute the below command, you should be able to see slave node added.
++
+[source, shell,options="nowrap"]
+----
+$ kubectl get nodes
+----
++	
+.output:
+[source%autofit, shell,options="nowrap"]
+----	
+NAME         STATUS   ROLES    AGE     VERSION
+k8s-master   Ready    master   56m     v1.13.2
+k8s-s1       Ready    <none>   2m49s   v1.13.2
+----
+
+
+=== Install Helm
+
+Helm package manager consists of helm client and tiller component which runs as pod on k8s. We will install helm client on our master server itself.
+
+==== Install helm client.
+
+. Install helm client using snap on master server using below command.
++
+[sh]
+```
+$ sudo snap install helm --classic
+```
+
+. Verify helm client is running by executing command `helm version`, it should give version details for client and for server side should return error until we install tiller.
+
+==== Install Tiller.
+
+Before installing tiller we need to create RBAC for the tiller pod.
+
+. Create service account for tiller.
++
+[sh]
+```
+$ kubectl create serviceaccount -n kube-system tiller
+```
+. Provide cluster role for the above service account.
++
+[sh]
+```
+$ kubectl create clusterrolebinding tiller-cluster-rule \
+   --clusterrole cluster-admin \
+   --serviceaccount=kube-system:tiller
+```
+. Now create tiller using the above service account 
++
+[sh]
+```
+helm init --service-account tiller
+```
+
+. Wait until tiller pod comes up.
++
+[sh]
+```
+kubectl get po --all-namespaces --watch
+```
+. Once tiller pod is up, run below command to verify helm is installed properly,
++
+[sh]
+```
+helm version
+```
+
+ the output provide version details for both client and server.
+
+===== Install Ingress controller
+
+Optionally if you want to expose Any API/web application install ingress controllers such as NGINX, traefik etc.
+
+====== Install Dashboard
+. Execute below command to install kubernetes dashboard
++
+```
+$ helm install --name kubernetes-dashboard \
+    --set service.type=NodePort,rbac.clusterAdminRole=true \
+	--namespace kube-system 
+	--debug stable/kubernetes-dashboard
+```
+. Execute below command to get the node port to access dashboard
++
+```
+kubectl get -n kube-system services kubernetes-dashboard \
+    -o jsonpath="{.spec.ports[0].nodePort}"
+```
+
+. Execute below command to get the node ip, since we have only
+one worker node, we can directly use k8s-s1 floating ip to access
+dashboard
++
+```
+kubectl get nodes -o jsonpath="{.items[0].status.addresses[0].address}" 
+```
+
+. Get token key to access ui
++
+```
+kubectl describe secret $(kubectl -n kube-system get secret | \
+    grep -E  'kubernetes-dashboard-token' | \
+    awk '{print $1}') -n kube-system
+```
+
+. Access the dashboard at url `https://{floating-ip of k8s-1}:{node port}`, select
+token option and paste the token retrieved at above step. 
+
+
+[NOTE]
+====
+*Useful commands*
+
+
+* to download a chart
+```
+helm fetch stable/kubernetes-dashboard --untar
+```
+* to search a chart
+
+```
+helm search dashboard
+```
+
+* to dry run a chart from a location
+
+```
+helm install --name kubernetes-dashboard \
+    --set service.type=NodePort --dry-run \
+    --debug kubernetes-dashboard/
+```
+====
+
+====== Install Traefik Ingress controller.
+
+. Execute below helm command to install traefik ingress.
++
+[sh]
+```
+$ helm install --name treafik-ingress --namespace kube-system \
+    --set dashboard.enabled=true \
+    --set rbac.enabled=true stable/traefik
+```
+
+====== Installing NGINX ingress controller.
+
+. Execute below helm command to install nginx ingress.
++
+[sh]
+```
+$ helm install --name nginx-ingress  --namespace kube-system \
+    --set rbac.create=true stable/nginx-ingress 
+```
+
+==== References
+
+https://github.com/helm/charts/tree/master/stable/traefik - traefik
+
+https://github.com/helm/charts/tree/master/stable/nginx-ingress - nginx
+
+https://kubernetes.io/docs/concepts/services-networking/ingress/ - ingress controller concepts

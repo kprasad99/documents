@@ -534,11 +534,7 @@ table.CodeRay td.code>pre{padding:0}
 <ul class="sectlevel2">
 <li><a href="#_setup_network">Setup network.</a></li>
 <li><a href="#_install_docker">Install docker</a></li>
-</ul>
-</li>
-<li><a href="#_install_and_configure_kubernetes">Install and configure kubernetes.</a>
-<ul class="sectlevel2">
-<li><a href="#_general_installation">General Installation</a></li>
+<li><a href="#_prepare_server">Prepare server</a></li>
 <li><a href="#_configure_master_vm">Configure Master VM.</a></li>
 <li><a href="#_configure_kubernetes_dashboad">Configure Kubernetes Dashboad.</a></li>
 <li><a href="#_configuration_slave_node">Configuration slave node.</a></li>
@@ -721,6 +717,10 @@ table.CodeRay td.code>pre{padding:0}
 <li>
 <p>Reboot VMs.</p>
 </li>
+</ul>
+</div>
+<div class="ulist">
+<ul>
 <li>
 <p>Update Packages.</p>
 <div class="ulist">
@@ -790,17 +790,15 @@ table.CodeRay td.code>pre{padding:0}
 <pre class="CodeRay highlight nowrap"><code data-lang="shell">$ sudo systemctl status docker</code></pre>
 </div>
 </div>
+<div class="paragraph">
+<p>== Install and configure kubernetes.</p>
+</div>
 </li>
 </ul>
 </div>
 </div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_install_and_configure_kubernetes"><a class="anchor" href="#_install_and_configure_kubernetes"></a>Install and configure kubernetes.</h2>
-<div class="sectionbody">
 <div class="sect2">
-<h3 id="_general_installation"><a class="anchor" href="#_general_installation"></a>General Installation</h3>
+<h3 id="_prepare_server"><a class="anchor" href="#_prepare_server"></a>Prepare server</h3>
 <div class="paragraph">
 <p>Execute the below steps on both the VMs.</p>
 </div>
@@ -838,7 +836,7 @@ Browse <a href="http://apt.kubernetes.io/" class="bare">http://apt.kubernetes.io
 <p>Install <code>kubeadm</code></p>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight nowrap"><code data-lang="shell">$ sudo apt install kubeadm</code></pre>
+<pre class="CodeRay highlight nowrap"><code data-lang="shell">$ sudo apt update; sudo apt install kubeadm</code></pre>
 </div>
 </div>
 </li>
@@ -868,7 +866,7 @@ If 4 and 5 steps not followed, kubelet service will not start.
 <li>
 <p>Add private ip to kubernetes arguments</p>
 <div class="paragraph">
-<p>While installing you might get error related to port forwarding if you are using private IP which is true in our case. To resolve this issue,
+<p>While installing <code>kubeadm</code> you might get error related to port forwarding if you are using private IP which is true in our case. To resolve this issue,
 Create file <code>/etc/default/kubelet</code> and following content in the file.</p>
 </div>
 <div class="listingblock">
@@ -924,7 +922,8 @@ sudo systemctl restart docker</code></pre>
 </div>
 </li>
 <li>
-<p>As output of above command shows to execute below command, run below command to enable <code>kubectl</code> command. Execute the below command.</p>
+<p>As output of above command shows to execute below command, run below command to update auth details
+for <code>kubectl</code> command.</p>
 <div class="listingblock">
 <div class="content">
 <pre class="CodeRay highlight nowrap"><code data-lang="shell">$ mkdir -p $HOME/.kube
@@ -1137,9 +1136,9 @@ Port will be dynamically generated and port should be replaced from step 5.
 <p>Create Cluster Role binding for the user.</p>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight nowrap"><code data-lang="shell">$  kubectl create clusterrolebinding admin-user -n kube-system \
-         --clusterrole=cluster-admin \
-         --serviceaccount=kube-system:admin-user</code></pre>
+<pre class="CodeRay highlight nowrap"><code data-lang="sh">$  kubectl create clusterrolebinding admin-user -n kube-system \
+     --clusterrole=cluster-admin \
+     --serviceaccount=kube-system:admin-user</code></pre>
 </div>
 </div>
 </li>
@@ -1148,8 +1147,8 @@ Port will be dynamically generated and port should be replaced from step 5.
 <div class="listingblock">
 <div class="content">
 <pre class="CodeRay highlight nowrap"><code data-lang="shell">$ kubectl -n kube-system describe secret $(kubectl -n kube-system get secret | \
-         grep admin-user | \
-          awk '{print $1}')</code></pre>
+      grep admin-user | \
+      awk '{print $1}')</code></pre>
 </div>
 </div>
 <div class="listingblock">
@@ -1171,7 +1170,7 @@ token:      eyJhbGciOiJSUzI1NiIsImtpZCI6IiJ9.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2V
 </div>
 </div>
 <div class="paragraph">
-<p>Copy the token and paste it into token feild in the URL to Dashboard and login to dashboard.</p>
+<p>Copy the token and paste it into token field in the URL to Dashboard and login to dashboard.</p>
 </div>
 </li>
 </ol>
@@ -1187,7 +1186,7 @@ token:      eyJhbGciOiJSUzI1NiIsImtpZCI6IiJ9.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2V
 <div class="listingblock">
 <div class="content">
 <pre class="CodeRay highlight nowrap"><code data-lang="shell">$  kubeadm join 192.168.56.10:6443 --token t0j1zi.v5lojsnpjh9r0rbn \
-        --discovery-token-ca-cert-hash sha256:40b1142d9002003ab5b085776b8b8cba4a41ceaafab06429c49eaedc2b2939fa</code></pre>
+       --discovery-token-ca-cert-hash sha256:40b1142d9002003ab5b085776b8b8cba4a41ceaafab06429c49eaedc2b2939fa</code></pre>
 </div>
 </div>
 <div class="admonitionblock note">
@@ -1256,7 +1255,7 @@ k8s-s1       Ready    &lt;none&gt;   2m49s   v1.13.2</code></pre>
 <p>Create service account for tiller.</p>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight"><code>kubectl -n kube-system create serviceaccount tiller</code></pre>
+<pre class="CodeRay highlight"><code>$ kubectl create serviceaccount -n kube-system tiller</code></pre>
 </div>
 </div>
 </li>
@@ -1264,7 +1263,7 @@ k8s-s1       Ready    &lt;none&gt;   2m49s   v1.13.2</code></pre>
 <p>Provide cluster role for the above service account.</p>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight"><code>kubectl create clusterrolebinding tiller \
+<pre class="CodeRay highlight"><code>$ kubectl create clusterrolebinding tiller-cluster-rule \
    --clusterrole cluster-admin \
    --serviceaccount=kube-system:tiller</code></pre>
 </div>
@@ -1346,7 +1345,7 @@ k8s-s1       Ready    &lt;none&gt;   2m49s   v1.13.2</code></pre>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2019-04-11 00:04:59 IST
+Last updated 2019-04-28 16:52:30 IST
 </div>
 </div>
 </body>

@@ -98,6 +98,7 @@ network:
 
 * Reboot VMs.
 
+//tag::packageUpdate[]
 * Update Packages.
 ** Update apt sources.
 +
@@ -111,9 +112,10 @@ $ sudo apt update
 ----	
 $ sudo apt upgrade
 ----
+//end::packageUpdate[]
 
 === Install docker
-
+//tag::installDocker[]
 * Install utility packages
 +
 [source%autofit, shell,options="nowrap"]
@@ -144,11 +146,12 @@ $ sudo apt update ; sudo apt install docker-ce
 ----
 $ sudo systemctl status docker
 ----
-
+//end::installDocker[]
 == Install and configure kubernetes.
 
-=== General Installation
+=== Prepare server
 
+//tag::prepareServer[]
 Execute the below steps on both the VMs.
 
 . Add Kubernetes source gpg.
@@ -168,7 +171,7 @@ NOTE: Browse http://apt.kubernetes.io/ and search for the corresponding ubuntu v
 +
 [source, shell,options="nowrap"]
 ----
-$ sudo apt install kubeadm
+$ sudo apt update; sudo apt install kubeadm
 ----
 . Turn off swap
 +
@@ -182,7 +185,7 @@ IMPORTANT:  If 4 and 5 steps not followed, kubelet service will not start.
 
 . Add private ip to kubernetes arguments
 +
-While installing you might get error related to port forwarding if you are using private IP which is true in our case. To resolve this issue,
+While installing `kubeadm` you might get error related to port forwarding if you are using private IP which is true in our case. To resolve this issue,
 Create file `/etc/default/kubelet` and following content in the file.
 +
 [sh]
@@ -214,7 +217,7 @@ Create file `/etc/docker/daemon.json` and add following content.
 sudo systemctl daemon-reload
 sudo systemctl restart docker
 ```
-
+//end::prepareServer[]
 . Reboot VMs.
 
 === Configure Master VM.
@@ -226,7 +229,8 @@ sudo systemctl restart docker
 $ sudo kubeadm init --apiserver-advertise-address=192.168.56.10 \
 	 --pod-network-cidr=10.244.0.0/16
 ----
-. As output of above command shows to execute below command, run below command to enable `kubectl` command. Execute the below command.
+. As output of above command shows to execute below command, run below command to update auth details
+for `kubectl` command.
 +
 [source, shell,options="nowrap"]
 ----
@@ -377,19 +381,19 @@ $ kubectl get serviceaccount --all-namespaces
 ----
 . Create Cluster Role binding for the user.
 +
-[source%autofit, shell,options="nowrap"]
+[source%autofit,sh,options="nowrap"]
 ----
 $  kubectl create clusterrolebinding admin-user -n kube-system \
-	 --clusterrole=cluster-admin \
-	 --serviceaccount=kube-system:admin-user
+     --clusterrole=cluster-admin \
+     --serviceaccount=kube-system:admin-user
 ----	
 . Generate the Bearer Token to access Dashboard
 +
 [source, shell,options="nowrap"]
 ----
 $ kubectl -n kube-system describe secret $(kubectl -n kube-system get secret | \
-	 grep admin-user | \
-	  awk '{print $1}')
+      grep admin-user | \
+      awk '{print $1}')
 ----	
 +
 .output:
@@ -410,7 +414,7 @@ namespace:  11 bytes
 token:      eyJhbGciOiJSUzI1NiIsImtpZCI6IiJ9.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2VhY2NvdW50Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9uYW1lc3BhY2UiOiJrdWJlLXN5c3RlbSIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VjcmV0Lm5hbWUiOiJhZG1pbi11c2VyLXRva2VuLTRud3oyIiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZXJ2aWNlLWFjY291bnQubmFtZSI6ImFkbWluLXVzZXIiLCJrdWJlcm5ldGVzLmlvL3NlcnZpY2VhY2NvdW50L3NlcnZpY2UtYWNjb3VudC51aWQiOiJhMWUzY2E1MC0xZGFiLTExZTktOWQ1Mi0wODAwMjdhYmE3Y2IiLCJzdWIiOiJzeXN0ZW06c2VydmljZWFjY291bnQ6a3ViZS1zeXN0ZW06YWRtaW4tdXNlciJ9.YHRkrY1dPsrf1N4LU6qGqCPPl617faeBbHelJAdWXD3TvvZMYnQdMvZuWtFZjVMxXPdgXDud17eCffDXBg5bRAs1sxd7B37IbXVULrYFoMR-B0MjOa3eLx1edO_gvE6ZqpyPpdWxC0hWYI0P9cQ78oyZEZ0RDNctTus0qRpVrHpP5ZIMhfRPknV8zxxF-zGf8Xg8ni1NxUOHHB-DYO1T6gd4v65JgD2ohLS4N9rLpq_MrA7nc13R4sE6zDIgYi5V7kZYz0Zx72qAaV4oOGMDTr0FPP7q3m9SrH8uO3UOUe9tkp_ce8-7V9hJW8AbPHu3rLNBw2dOGnOk59yNe3jv5w
 ----
 +
-Copy the token and paste it into token feild in the URL to Dashboard and login to dashboard.
+Copy the token and paste it into token field in the URL to Dashboard and login to dashboard.
 
 === Configuration slave node.
 
@@ -419,7 +423,7 @@ Copy the token and paste it into token feild in the URL to Dashboard and login t
 [source%autofit, shell,options="nowrap"]
 ----
 $  kubeadm join 192.168.56.10:6443 --token t0j1zi.v5lojsnpjh9r0rbn \
-	--discovery-token-ca-cert-hash sha256:40b1142d9002003ab5b085776b8b8cba4a41ceaafab06429c49eaedc2b2939fa
+       --discovery-token-ca-cert-hash sha256:40b1142d9002003ab5b085776b8b8cba4a41ceaafab06429c49eaedc2b2939fa
 ----
 +
 NOTE: The above command is sample, the values are dynamically generated.
@@ -463,16 +467,17 @@ Before installing tiller we need to create RBAC for the tiller pod.
 +
 [sh]
 ```
-kubectl -n kube-system create serviceaccount tiller
+$ kubectl create serviceaccount -n kube-system tiller
 ```
 . Provide cluster role for the above service account.
 +
 [sh]
 ```
-kubectl create clusterrolebinding tiller \
+$ kubectl create clusterrolebinding tiller-cluster-rule \
    --clusterrole cluster-admin \
    --serviceaccount=kube-system:tiller
 ```
+
 . Now create tiller using the service account 
 +
 [sh]

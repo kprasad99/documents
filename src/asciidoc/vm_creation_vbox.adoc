@@ -1,6 +1,6 @@
-==== Setup VM in VirtualBox
-:data-uri:
-:imagesdir: ./images
+==== Setup VM on VirtualBox
+
+:imagesdir: images
 
 The below steps guides through to create Virtual Machine in VirtualBox.
 

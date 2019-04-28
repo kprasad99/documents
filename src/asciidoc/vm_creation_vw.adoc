@@ -1,0 +1,142 @@
+=== Setup VM on vmware workstation
+
+:imagesdir: images
+
+We will install `ubuntu 18.04 server` as host VM.
+
+. Create new VM by clicking on `Create New Virtual Machine`
++
+image::k8s-ops/k8s_vm_create_step_1.png[title="VM create wizard" opts="inline"] 
+
+. Browse for and select `ubuntu server image` (ISO file) and click _next_
++
+image::k8s-ops/k8s_vm_create_step_2.png[title="Select VM Image source" opts="inline"]
+
+. Provide VM default user information.
++
+image::k8s-ops/k8s_vm_create_step_3.png[title="UserInfo wizard" opts="inline"]
+
+. Set VM name and disk location.
++
+image::k8s-ops/k8s_vm_create_step_4.png[title="DiskInfo wizard" opts="inline"]
+
+. Set Disk size and select option `store virtual disk as a single file`
++
+image::k8s-ops/k8s_vm_create_step_5.png[title="DiskInfo wizard" opts="inline"]
+
+. Click on _customize_ _hardware_ as we need to increase RAM and enable 
+Virtualization parameters
++
+image::k8s-ops/k8s_vm_create_step_6.png[title="VM summary" opts="inline"]
+
+. Increase RAM size, processor count and select all options of virtualization engine.
++
+image::k8s-ops/k8s_vm_create_step_7.png[title="Hardware customization" opts="inline"]
++
+IMPORTANT: You need to enable virtualization parameters for nested kvm to work.
++
+TIP: You can remove controllers such as usb, sound, printer and remove 3D support in display section
+
+. Add two additional network adapters, configure `network connection types` as shown in below table.
++
+[options="Network Adapter settings",cols="1,1"]
+|===
+|Name   | Connection Type   
+//-------------
+| Network Adapter   | Host only   
+| Network Adapter 2   | NAT   
+| Network Adapter 3  | Bridged   
+|===
++
+image::k8s-ops/k8s_vm_create_step_8.png[title="Network adapter settings" opts="inline"]
++
+while configuring bridged configuration you can customize host network adapter the bridging applies to.
++
+image::k8s-ops/k8s_vm_create_step_9.png[title="Bridged configuration" opts="inline"]
+
+. Once configuration is done, click on _close_
++
+image::k8s-ops/k8s_vm_create_step_10.png[title="Final harwardware settings" opts="inline"]
+
+. click on _finsh_
++
+image::k8s-ops/k8s_vm_create_step_11.png[title="VM summary" opts="inline"]
+
+on clicking of _finish_ button application will setup disk space allocate hardware and will reboot appliance and we will be
+presented with ubuntu OS installation wizard.
+
+==== Setup Ubuntu OS
+
+. On Image load we will be promted to select languare, set the desired language.
++
+image::k8s-ops/k8s_vm_create_step_12.png[title="os setup language wizard" opts="inline"]
+
+. Next we will be prompted to select keyboard layout, let the default configuration be as it is. 
+Navigate to _Done_ using tab and press _enter_.
++
+image::k8s-ops/k8s_vm_create_step_13.png[title="os setup keyboard layout wizard" opts="inline"]
+
+. Next we will be navigated to network interface wizard. navigate by pressing arrow button to select
+a interface, once interface is highlighted press enter and a drop down menu list appears, configure
+network settings as shown in below table.
++
+[options="Network interface settings",cols="1,1"]
+|===
+| Interface   | Settings   
+//-------------
+| ens32   | we need set static ip to this interface, select manual option from drop down and enter static
+ip address from subnet, you can get the subnet from the dhcp ip already assigned to this interface
+(shown in second diagram below)   
+| ens33   | interface will get ip from DHCP, hence no change is required   
+| ens34   | We need to disable this interface and bring up/down manually, hence select option `disable` from option   
+|===
++
+image::k8s-ops/k8s_vm_create_step_14.png[title="os setup network settings wizard" opts="inline"]
++
+image::k8s-ops/k8s_vm_create_step_15.png[title="static ip settings wizard" opts="inline"]
+
+. Below is network interface summary settings, once interface settings configured, navigate to _Done_ button
+and press _enter_
++
+image::k8s-ops/k8s_vm_create_step_16.png[title="interface settings summary" opts="inline"]
+
+. Skip through proxy settings dialog by pressing enter on _done_, until unless you need to configure a proxy.
++
+image::k8s-ops/k8s_vm_create_step_17.png[title="proxy settings wizard" opts="inline"]
+
+. Skip through ubuntu archive mirror page by pressing enter on _done_.
++
+image::k8s-ops/k8s_vm_create_step_18.png[title="ubuntu archive settings wizard" opts="inline"]
+
+. Next we will be prompted to configure file system, select `use entire disk and with lvm` option and press _enter_.
++
+image::k8s-ops/k8s_vm_create_step_19.png[title="filesystem setup wizard" opts="inline"]
+ 
+. Since we have only one disk, file system setup wizard displays only one drive, select the drive and press _enter_
++
+image::k8s-ops/k8s_vm_create_step_20.png[title="filesystem setup wizard" opts="inline"]
++
+CAUTION: When selecting LVM make sure you've selected added entire disk to VG by default in 18.04 4GB is selected. You can extend the drive
+at later point of time as well.
++
+To set entire disk for usage navigate to `Available device` -> `*-vg` -> `*-lv` by pressing _up_ arrow and then press _enter_, select option `edit`
+from drop down and update the value to entire drive 
++
+image::k8s-ops/k8s_vm_create_step_21.png[title="LVM configuration wizard" opts="inline"]
++
+image::k8s-ops/k8s_vm_create_step_22.png[title="LVM configuration wizard" opts="inline"]
+
+. A summary window will shown describing the Disk Partitions, once file system configuration is done press _enter_ after navigating to _done_
++
+image::k8s-ops/k8s_vm_create_step_23.png[title="File system configuration summary" opts="inline"]
+
+. Next `Profile setup` window comes up, fill all the details.
++
+image::k8s-ops/k8s_vm_create_step_24.png[title="Profile setup wizard" opts="inline"]
+
+. Select option `install ssh server` before navigating to next page
++
+image::k8s-ops/k8s_vm_create_step_25.png[title="SSH server configuration" opts="inline"]
+- Once you navigate from ssh server installation window, it would take sometime to setup OS. Once Setup completes, would prompt to install grub, select yes to install grub, finally after installation click on `Reboot`
++
+image::k8s-ops/k8s_vm_create_step_25.png[title="Installation summary" opts="inline"]

@@ -53,7 +53,7 @@
 								<sourceHighlighter>rouge</sourceHighlighter>
 								<attributes>
 									<icons>font</icons>
-									<source-autofit/>
+									<source-autofit />
 									<pagenums />
 									<toc />
 									<idprefix>_</idprefix>
@@ -88,6 +88,27 @@
 			<plugin>
 				<groupId>org.asciidoctor</groupId>
 				<artifactId>asciidoctor-maven-plugin</artifactId>
+			</plugin>
+			<plugin>
+				<artifactId>maven-resources-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>copy-resources</id>
+						<!-- here the phase you need -->
+						<phase>generate-resources</phase>
+						<goals>
+							<goal>copy-resources</goal>
+						</goals>
+						<configuration>
+							<outputDirectory>${basedir}/docs/images</outputDirectory>
+							<resources>
+								<resource>
+									<directory>${basedir}/src/asciidoc/images</directory>
+								</resource>
+							</resources>
+						</configuration>
+					</execution>
+				</executions>
 			</plugin>
 		</plugins>
 	</build>

@@ -1,0 +1,137 @@
+= Install ansible on ubuntu 18.04
+
+//tag::installAnsible[]
+
+* Update Packages.
+** Update apt sources.
++
+[source, shell,options="nowrap"]
+----
+$ sudo apt update
+----	
+** Install packages
++
+[source, shell,options="nowrap"]
+----	
+$ sudo apt upgrade
+----
+
+* Install ansible
++
+```
+sudo apt install ansible
+```
+
+[NOTE]
+====
+*useful commands*
+
+- search ansible package
++
+```
+$ sudo apt search ansible
+```
+- to know information about the package
++
+```
+$ apt show ansible
+```
+- to upgrade ansible
+```
+sudo apt upgrade ansible
+```
+- to get ansible version installed
+```
+ansible --version
+```
+====
+
+
+//end::installAnsible[]
+
+=== (Optional) Install openstack client
+
+Since my VMs are provisioned using openstack, installing openstack client on ansible server
+
+. Install pip
++
+```
+sudo apt-get install python-dev python-pip
+```
+
+. openstack client using pip
++
+```
+sudo pip install python-openstackclient
+```
+. create openrc file and update credentials
++
+```
+export OS_PROJECT_DOMAIN_NAME=default
+export OS_USER_DOMAIN_NAME=default
+export OS_PROJECT_NAME=demo
+export OS_USERNAME=demo
+export OS_PASSWORD=openstack123
+export OS_AUTH_URL=http://192.168.56.16/identity
+export OS_IDENTITY_API_VERSION=3
+export OS_IMAGE_API_VERSION=2
+```
+
+. Load source
++
+```
+source openrc
+```
+
+=== Run sample playbook
+
+==== Setup SSH login
+
+You can skip this step if you are using VM provisioned by openstack and have
+passed keypair while creating VM.
+
+. Generate ssh-kay
++
+```
+$ ssh-keygen -t ed25519
+```
+
+. Copy the SSH key to the server.
++
+```
+$ ssh-copy-id -i ~/.ssh/id_ed25519.pub kp@192.168.56.20
+``` 
+. validate ssh wroks
++
+```
+$ ssh kp@192.168.56.20
+```
+
+==== Inventory configuration
+
+. Create inventory yaml file, to list all the servers that to be managed/used by anisble.
++
+[source,yaml]
+```
+all:
+  children:
+    test-vm:
+      vars:
+        ansible_ssh_private_key_file: ~/vm_ssh_keys/k8s.priv
+        ansible_user: ubuntu
+      hosts:
+        192.168.1.228:
+        #  ansible_ssh_private_key_file: ~/vm_ssh_keys/k8s.priv
+```
+. Validate inventory file by executing below command
++
+```
+$ ansible -i inventory.yaml -m raw -a 'lsb_release -a' all
+
+//or if you have not configured username in yaml
+
+$ ansible -i inventory.yaml -u ubuntu -m raw -a 'lsb_release -a' all
+```
++
+NOTE: Refer https://docs.ansible.com/ansible/latest/user_guide/intro_inventory.html[here] 
+to learn inventory file syntax

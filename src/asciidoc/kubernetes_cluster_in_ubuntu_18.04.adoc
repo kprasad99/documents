@@ -147,6 +147,7 @@ $ sudo apt update ; sudo apt install docker-ce
 $ sudo systemctl status docker
 ----
 //end::installDocker[]
+
 == Install and configure kubernetes.
 
 === Prepare server

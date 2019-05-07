@@ -4,52 +4,52 @@
 
 * Download the NEXUS package
 +
-[sh]
-```
+[source,sh]
+----
 $ wget https://sonatype-download.global.ssl.fastly.net/repository/repositoryManager/3/nexus-3.15.2-01-unix.tar.gz
-```
+----
 TIP: Checkout for the latest version instead of 3.15
 
 * Extract the file
 +
-[sh]
-```
+[source,sh]
+----
 $ tar -xzvf nexus-3.15.2-01-unix.tar.gz
-```
+----
 * Move the file to `/opt` directory.
 +
-[sh]
-```
+[source,sh]
+----
 $ sudo mv nexus-3.15.2-01 /opt/nexus-server/nexus-3.15.2-01.
-```
+----
 * Create user `nexus`
 +
-[sh]
-```
+[source,sh]
+----
 $ sudo addUser nexus
-```
+----
 * Give sudo permission to user `nexus`
 +
-[sh]
-```
+[source,sh]
+----
 $ sudo usermod -aG sudo nexus 
-```
-* Change the ownership of the directory.
+----
+* Change the ownersource,ship of the directory.
 +
-[sh]
-```
+[source,sh]
+----
 $ sudo chown nexus:nexus /opt/nexus-server 
-```
+----
 * In  bin/nexus.rc  assign the user between the quotes in the line below.
 +
-[sh]
-```
+[source,sh]
+----
 run_as_user="nexus"
-```
+----
 * Create a file called `nexus.service`. Add the following contents, then save the file in the  `/etc/systemd/system/` directory:
 +
-[sh]
-```
+[source,bash]
+----
 [Unit]
 Description=nexus service
 After=network.target
@@ -64,15 +64,15 @@ Restart=on-abort
   
 [Install]
 WantedBy=multi-user.target
-```
+----
 * Activate the service with the following commands:
 +
-[sh]
-```
+[source,sh]
+----
 sudo systemctl daemon-reload
 sudo systemctl enable nexus.service
 sudo systemctl start nexus.service
-```
+----
 * Default username and password is `admin` and `admin123` respectively with port beign 8081
 
 ==== Setup Maven Repository
@@ -82,7 +82,7 @@ We will not create maven repository additionally, NEXUS comes with a default con
 Following are the repositories created for maven.
 
 *** `maven-releases`, for hosting your release artifacts locally.
-*** `maven-snapshots`, for hosting your snapshot artifacts locally.
+*** `maven-snapsource,shots`, for hosting your snapsource,shot artifacts locally.
 *** `maven-central`, a repository of type `proxy` that connects to central maven repository.
 *** `maven-public`, a repository of type 'group` which holds the above repository, we connect to this repository from dev machine, the order of searching for artifacts as defined above.
 
@@ -90,7 +90,7 @@ Following are the repositories created for maven.
 
 By default, the Docker client communicates with the repo using HTTPS. Since I didn’t have the certificate, will use HTTP instead of HTTPS.
 
-IMPORTANT: The Docker repo requires 2 different ports. We are going to use 8184 for pull from the proxy repo and 8185 for pull and push to the private repo of release and 8186 for pull and push of snapshots.
+IMPORTANT: The Docker repo requires 2 different ports. We are going to use 8184 for pull from the proxy repo and 8185 for pull and pusource,sh to the private repo of release and 8186 for pull and pusource,sh of snapsource,shots.
 
 * Create a blob store.(optional)
 +
@@ -116,11 +116,11 @@ Goto `settings` -> `repository` -> `cleanup policies` -> `create cleanup policy`
 
 image::docker_cleanup_policy_1.png[]
 
-* Create a private repository for snapshots
+* Create a private repository for snapsource,shots
 +
 Goto `settings` -> `repository` -> `repositories` -> `Create repository`, a repository recipe page pops up, select `docker(hosted)`
 
-** Set name for the repository `docker-snapshots`
+** Set name for the repository `docker-snapsource,shots`
 ** Choose `HTTP` type and set port to 8186
 ** Set anonymous docker pull (optional)
 ** Enable docker V1 API.
@@ -128,7 +128,7 @@ Goto `settings` -> `repository` -> `repositories` -> `Create repository`, a repo
 ** Deployment policy `Allow redeploy`
 ** Cleanup policy to previously created policy.
 
-image::docker_snapshots_repository_1.png[]
+image::docker_snapsource,shots_repository_1.png[]
 
 * Create a proxy repository for docker hub
 +
@@ -151,7 +151,7 @@ Goto `settings` -> `repository` -> `repositories` -> `Create repository`, a repo
 ** Set anonymous docker pull (optional)
 ** Enable docker V1 API.
 ** Select previously created blob store from the dropdown.
-** Finally add `docker-release`, `docker-snapshots` and 'docker-hub` in order as shown below.
+** Finally add `docker-release`, `docker-snapsource,shots` and 'docker-hub` in order as source,shown below.
 
 image::docker_repository_group_1.png[]
  
@@ -165,8 +165,8 @@ To interact with your repo, the first thing is to configure the Docker daemon in
 
 * If its ubuntu machine open/create `/etc/docker/daemon.json` add following details:
 +
-[json]
-```
+[source,json]
+----
 {
   "insecure-registries": [
     "kp-ci:8184",
@@ -175,20 +175,135 @@ To interact with your repo, the first thing is to configure the Docker daemon in
   ],
   "disable-legacy-registry": true
 }
-```
+----
 
 * Restart docker daemon service.
 +
-[sh]
-```
+[source,sh]
+----
 $ sudo systemctl restart docker
-```
+----
 
 ===== Create user with deployment privileges.
 
-* First we need to create custom role before creating a user, goto `settings` -> `security` -> `Roles` -> `Create ROle` => `New ROle`. Add role Id and role name. and also and below list of privileges.
+* First we need to create custom role before creating a user, goto `settings` -> `security` -> `Roles` -> `Create Role` => `New Role`. Add role Id and role name. and also and below list of privileges.
 
 *** nx-blobstores-all
-*** nx-component-upload(most probably this should alone with view should suffice, though I did not test)
+*** nx-component-upload(most probably this source,should alone with view source,should suffice, though I did not test)
 *** nx-repository-admin-*-*-*
 *** nx-repository-view-*-*-*
+
+* Next goto `settings` -> `security` -> `users` -> `create user`, a new popup comes prompting for user details 
+fill all the details and set `status` to `Active` and also add the role created at previous step by moving the
+role from left hand side box to right hand side box.
+
+=== Install Helm Repository.
+
+
+==== Build from source code.
+
+* Clone the project.
++
+[source,sh]
+----
+git clone https://github.com/sonatype-nexus-community/nexus-repository-helm.git
+---- 
+* change directory
++
+[source,sh]
+----
+cd nexus-repository-helm
+----
+
+* Build the source.
++
+[source,sh]
+----
+$ mvn clean package -DskipTests
+----
++
+TIP: If you want stable release checkout by last released version tag.
+
+==== Enable Helm repository
+
+* Copy the bundle from target to Copy the bundle into `<nexus_dir>/system/org/sonatype/nexus/plugins/nexus-repository-helm/0.0.7/nexus-repository-helm-0.0.7.jar`
++
+[source,sh]
+----
+ sudo mkdir -p /opt/nexus-server/nexus-3.15.2-01/system/org/sonatype/nexus/plugins/nexus-repository-helm/0.0.7/
+ sudo target/nexus-repository-helm-0.0.7.jar \
+     /opt/nexus-server/nexus-3.15.2-01/system/org/sonatype/nexus/plugins/nexus-repository-helm/0.0.7/
+ sudo chown nexus:nexus -R /opt/nexus-server/nexus-3.15.2-01/system/org/sonatype/nexus/plugins/nexus-repository-helm/0.0.7/
+----
+
+* Update OSGi feature by updating  `features.xml` at `<nexus_home>/system/org/sonatype/nexus/assemblies/nexus-core-feature/3.15.2-01/nexus-core-feature-3.15.2-01-features.xml`
+
+** Add entire highlighted line under `nexus-core-feature` section.
++
+[source,xml,subs="normal"]
+----
+<feature name="nexus-core-feature" description="org.sonatype.nexus.assemblies:nexus-core-feature" version="3.15.2.01">
+        <details>org.sonatype.nexus.assemblies:nexus-core-feature</details>
+        <feature version="3.15.2.01" prerequisite="false" dependency="false">nexus-audit-plugin</feature>
+        <feature version="3.15.2.01" prerequisite="false" dependency="false">nexus-blobstore-tasks</feature>
+        <feature version="3.15.2.01" prerequisite="false" dependency="false">nexus-ssl-plugin</feature>
+        <feature version="3.15.2.01" prerequisite="false" dependency="false">nexus-coreui-plugin</feature>
+        <feature version="3.15.2.01" prerequisite="false" dependency="false">nexus-repository-httpbridge</feature>
+        <feature version="3.15.2.01" prerequisite="false" dependency="false">nexus-repository-maven</feature>
+        <feature version="3.15.2.01" prerequisite="false" dependency="false">nexus-repository-npm</feature>
+        <feature version="3.15.2.01" prerequisite="false" dependency="false">nexus-repository-pypi</feature>
+        <feature version="3.15.2.01" prerequisite="false" dependency="false">nexus-repository-raw</feature>
+        *<feature version="0.0.7" prerequisite="false" dependency="false">nexus-repository-helm</feature>*
+        <feature version="3.15.2.01" prerequisite="false" dependency="false">nexus-restore-maven</feature>
+        <feature version="3.15.2.01" prerequisite="false" dependency="false">nexus-blobstore-s3</feature>
+        <feature version="3.15.2.01" prerequisite="false" dependency="false">nexus-restore-npm</feature>
+        <feature version="3.15.2.01" prerequisite="false" dependency="false">nexus-restore-pypi</feature>
+        <feature version="3.15.2.01" prerequisite="false" dependency="false">nexus-restore-raw</feature>
+        <feature version="3.15.2.01" prerequisite="false" dependency="false">nexus-script-plugin</feature>
+        <feature version="3.15.2.01" prerequisite="false" dependency="false">nexus-task-log-cleanup</feature>
+        <feature prerequisite="true" dependency="false">wrap</feature>
+</feature>
+----
+
+** Add below xml section either below `nexus-core-feature` or just above `</features`
++
+[source,xml]
+----
+<feature name="nexus-repository-helm" description="org.sonatype.nexus.plugins:nexus-repository-helm" version="0.0.7">
+    <details>org.sonatype.nexus.plugins:nexus-repository-helm</details>
+    <bundle>mvn:org.sonatype.nexus.plugins/nexus-repository-helm/0.0.7</bundle>
+</feature>
+----
+
+* Once `features.xml` file is updated restart the nexus service.
++
+[source,sh]
+----
+$ sudo systemctl restart nexus.service
+----
+
+* Verify nexus service start is successful.
++
+[source,sh]
+----
+$ sudo systemctl status nexus.service
+----
+
+==== Create a hosted Helm repository
+
+Current implementation supports hosted and proxy repositories, and does not support group,
+We will be creating only hosted helm repository, creating proxy should be straight forward.
+
+* Create blob to store helm packages.
++
+Go to `settings` -> `repository` -> `Blob stores` -> `Create blob`, fill the blob name, if required change the path
+keep the blob store directory/path as is.
++
+image::helm_blob_store.png[]
+
+* Create helm local repository.
++
+Go to `settings` -> `repository` -> `Repositories` -> `Create Repository`, and select `helm(hosted)` from list of repositories.
+Set the desired name and the also set the blob name that was created in previous step.
++
+image::helm_local_repo.png[]

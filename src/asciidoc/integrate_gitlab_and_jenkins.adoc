@@ -6,26 +6,26 @@
 
 * Goto `Manage Jenkins` -> `Manage Plguins` -> `Available Tab` and install following plugins.
 
-*** Violation Comments to GitLab
-*** GitLab
-*** Blue Ocean
-*** Common API for Blue Ocean
-*** Config API for Blue Ocean
-*** Dashboard for Blue Ocean
-*** Events API for Blue Ocean
-*** Git Pipeline for Blue Ocean
-*** JWT for Blue Ocean
-*** Personalization for Blue Ocean
-*** Pipeline implementation for Blue Ocean
-*** REST API for Blue Ocean
-*** REST Implementation for Blue Ocean
-*** Web for Blue Ocean
-*** Blue Ocean Pipeline Editor
-*** Blue Ocean Executor Info	
-*** Pipeline SCM API for Blue Ocean
-*** docker
-*** HTML Publisher
-*** Pipeline Utility Steps
+** Violation Comments to GitLab
+** GitLab
+** Blue Ocean
+** Common API for Blue Ocean
+** Config API for Blue Ocean
+** Dashboard for Blue Ocean
+** Events API for Blue Ocean
+** Git Pipeline for Blue Ocean
+** JWT for Blue Ocean
+** Personalization for Blue Ocean
+** Pipeline implementation for Blue Ocean
+** REST API for Blue Ocean
+** REST Implementation for Blue Ocean
+** Web for Blue Ocean
+** Blue Ocean Pipeline Editor
+** Blue Ocean Executor Info	
+** Pipeline SCM API for Blue Ocean
+** docker
+** HTML Publisher
+** Pipeline Utility Steps
 
 ==== Create User for Gitlab
 
@@ -53,10 +53,10 @@ We need to Add SSH key to enable Jenkins to clone repositories.
 
 * Generate SSH public/private key using below command
 +
-[sh]
-```
+[source,sh]
+----
 $ ssh-keygen -t rsa
-```
+----
 * Goto `Manage Jenkins` -> `Configure Credentials` -> `Credentials` -> ` System` -> `Global Credentials` -> `Add Credentials`
 * Select Kind as `ssh username with private key`
 * Set the username generate in previous section.
@@ -72,8 +72,8 @@ $ ssh-keygen -t rsa
 
 * Now create a sample Project with Jenkinsfile in Gitlab.
 +
-[Jenkinsfile]
-```
+[source,Jenkinsfile]
+----
 pipeline {
     agent any
     
@@ -88,7 +88,7 @@ pipeline {
     }
 }
 
-```
+----
 * Add Build User to the project with role `Developer`
 * Goto Jenkins Server and create new multibranch project say `k-sample-ci-project`
 * In Branch Sources section select `Git`

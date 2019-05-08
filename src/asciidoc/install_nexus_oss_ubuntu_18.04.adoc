@@ -128,7 +128,7 @@ Goto `settings` -> `repository` -> `repositories` -> `Create repository`, a repo
 ** Deployment policy `Allow redeploy`
 ** Cleanup policy to previously created policy.
 
-image::docker_snapsource,shots_repository_1.png[]
+image::docker_snapshots_repository_1.png[]
 
 * Create a proxy repository for docker hub
 +
@@ -240,7 +240,7 @@ TIP: If you want stable release checkout by last released version tag.
 
 ** Add entire highlighted line under `nexus-core-feature` section.
 +
-[source,xml,subs="normal"]
+[source%nowrap,xml,subs="+quotes,+macros"]
 ----
 <feature name="nexus-core-feature" description="org.sonatype.nexus.assemblies:nexus-core-feature" version="3.15.2.01">
         <details>org.sonatype.nexus.assemblies:nexus-core-feature</details>
@@ -253,7 +253,7 @@ TIP: If you want stable release checkout by last released version tag.
         <feature version="3.15.2.01" prerequisite="false" dependency="false">nexus-repository-npm</feature>
         <feature version="3.15.2.01" prerequisite="false" dependency="false">nexus-repository-pypi</feature>
         <feature version="3.15.2.01" prerequisite="false" dependency="false">nexus-repository-raw</feature>
-        *<feature version="0.0.7" prerequisite="false" dependency="false">nexus-repository-helm</feature>*
+        **<feature version="0.0.7" prerequisite="false" dependency="false">nexus-repository-helm</feature>**
         <feature version="3.15.2.01" prerequisite="false" dependency="false">nexus-restore-maven</feature>
         <feature version="3.15.2.01" prerequisite="false" dependency="false">nexus-blobstore-s3</feature>
         <feature version="3.15.2.01" prerequisite="false" dependency="false">nexus-restore-npm</feature>
@@ -267,7 +267,7 @@ TIP: If you want stable release checkout by last released version tag.
 
 ** Add below xml section either below `nexus-core-feature` or just above `</features`
 +
-[source,xml]
+[source%nowrap,xml,options="nowrap"]
 ----
 <feature name="nexus-repository-helm" description="org.sonatype.nexus.plugins:nexus-repository-helm" version="0.0.7">
     <details>org.sonatype.nexus.plugins:nexus-repository-helm</details>

@@ -300,13 +300,14 @@ kube-system   kube-proxy-882ms                       1/1     Running   0        
 kube-system   kube-scheduler-k8s-master              1/1     Running   0          10m
 kube-system   kubernetes-dashboard-57df4db6b-5phx2   1/1     Running   0          35s
 ----
-. By default dashboard cannot be accessed from outside the VM, if you are using ubuntu desktop you can run below command and access the dashboard using proxy at url  http://localhost:8001/api/v1/namespaces/kube-system/services/https:kubernetes-dashboard:/proxy/
+. By default dashboard cannot be accessed from outside the VM, if you are using ubuntu desktop you can run below command and 
+access the dashboard using proxy at url  `http://localhost:8001/api/v1/namespaces/kube-system/services/https:kubernetes-dashboard:/proxy/`
 +
-[source, shell,options="nowrap"]
+[source,shell,options="nowrap"]
 ----
 $ kubectl proxy
 ----
-4. However if you want dashboard be accessed from external ip editing kubernetes-dashboard service and changing type from ClusterIP to NodePort.
+.. However if you want dashboard be accessed from external ip editing kubernetes-dashboard service and changing type from ClusterIP to NodePort.
 +
 [source, shell,options="nowrap"]
 ----

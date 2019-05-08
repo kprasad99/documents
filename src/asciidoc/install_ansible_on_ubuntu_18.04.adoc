@@ -5,7 +5,7 @@
 * Update Packages.
 ** Update apt sources.
 +
-[source, shell,options="nowrap"]
+[source,shell,options="nowrap"]
 ----
 $ sudo apt update
 ----	

@@ -1397,7 +1397,7 @@ Browse <a href="http://apt.kubernetes.io/" class="bare">http://apt.kubernetes.io
 <p>Install <code>kubeadm</code></p>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight nowrap"><code data-lang="shell">$ sudo apt update; sudo apt install kubeadm</code></pre>
+<pre class="CodeRay highlight nowrap"><code data-lang="shell">$ sudo apt update; sudo apt install kubeadm kubelet kubectl</code></pre>
 </div>
 </div>
 </li>
@@ -1410,7 +1410,12 @@ Browse <a href="http://apt.kubernetes.io/" class="bare">http://apt.kubernetes.io
 </div>
 </li>
 <li>
-<p>Commanent out any line containing swap in <code>/etc/fstab</code></p>
+<p>Turn off swap permanently in <code>/etc/fstab</code> by executing belo command.</p>
+<div class="listingblock">
+<div class="content">
+<pre>$ sudo sed -i '/ swap / s/^\(.*\)$/#\1/g' /etc/fstab</pre>
+</div>
+</div>
 <div class="admonitionblock important">
 <table>
 <tr>
@@ -1677,8 +1682,8 @@ k8s-s1       Ready    &lt;none&gt;   2m49s   v1.13.2</code></pre>
 <div class="content">
 <pre>$ helm install --name kubernetes-dashboard \
     --set service.type=NodePort,rbac.clusterAdminRole=true \
-	--namespace kube-system
-	--debug stable/kubernetes-dashboard</pre>
+    --namespace kube-system \
+    --debug stable/kubernetes-dashboard</pre>
 </div>
 </div>
 </li>
@@ -1829,7 +1834,7 @@ token option and paste the token retrieved at above step.</p>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2019-05-08 23:55:22 +0530
+Last updated 2019-05-13 00:22:59 +0530
 </div>
 </div>
 <style>

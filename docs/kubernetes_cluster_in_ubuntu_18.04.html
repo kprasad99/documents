@@ -460,6 +460,11 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <li><a href="#_install_ingress_controller">Install Ingress controller</a></li>
 </ul>
 </li>
+<li><a href="#_troubleshoot">Troubleshoot.</a>
+<ul class="sectlevel3">
+<li><a href="#_references">References</a></li>
+</ul>
+</li>
 </ul>
 </div>
 </div>
@@ -633,6 +638,36 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 </div>
 </li>
 <li>
+<p>Update <code>/etc/hosts</code> such that command <code>hostname -i</code> outputs ip which is routable from other VM.</p>
+<div class="listingblock">
+<div class="title">example(master)</div>
+<div class="content">
+<pre>192.168.56.10 k8s-master
+192.168.56.12 k8s-s1</pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">example(slave)</div>
+<div class="content">
+<pre>192.168.56.10 k8s-master
+192.168.56.12 k8s-s1</pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+This step is required since we&#8217;ve chosen host-only adapter and our default route is provider by NAT
+network, if we choose Bridge network this step can be skipped.
+</td>
+</tr>
+</table>
+</div>
+</li>
+<li>
 <p>Reboot VMs.</p>
 </li>
 </ul>
@@ -756,7 +791,7 @@ Browse <a href="http://apt.kubernetes.io/" class="bare">http://apt.kubernetes.io
 <p>Install <code>kubeadm</code></p>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight nowrap"><code data-lang="shell">$ sudo apt update; sudo apt install kubeadm</code></pre>
+<pre class="CodeRay highlight nowrap"><code data-lang="shell">$ sudo apt update; sudo apt install kubeadm kubelet kubectl</code></pre>
 </div>
 </div>
 </li>
@@ -769,7 +804,12 @@ Browse <a href="http://apt.kubernetes.io/" class="bare">http://apt.kubernetes.io
 </div>
 </li>
 <li>
-<p>Commanent out any line containing swap in <code>/etc/fstab</code></p>
+<p>Turn off swap permanently in <code>/etc/fstab</code> by executing belo command.</p>
+<div class="listingblock">
+<div class="content">
+<pre>$ sudo sed -i '/ swap / s/^\(.*\)$/#\1/g' /etc/fstab</pre>
+</div>
+</div>
 <div class="admonitionblock important">
 <table>
 <tr>
@@ -836,9 +876,23 @@ sudo systemctl restart docker</code></pre>
 <p>Initialize kubernetes master node by executing below command.</p>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight nowrap"><code data-lang="shell">$ sudo kubeadm init --apiserver-advertise-address=192.168.56.10 \
-         --pod-network-cidr=10.244.0.0/16</code></pre>
+<pre class="CodeRay highlight nowrap"><code data-lang="shell">$ kubeadm init --apiserver-advertise-address=192.168.56.9 \
+   --apiserver-cert-extra-sans=192.168.56.9  \
+   --pod-network-cidr=10.244.0.0/16 -v 1</code></pre>
 </div>
+</div>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+If decide to change pod network remember to change the pod network in <code>flannel.yaml</code>
+while setting up pod network in below step.
+</td>
+</tr>
+</table>
 </div>
 </li>
 <li>
@@ -857,10 +911,69 @@ $ sudo chown $(id -u):$(id -g) $HOME/.kube/config</code></pre>
 </li>
 <li>
 <p>Install pod network.</p>
+<div class="olist loweralpha">
+<ol class="loweralpha" type="a">
+<li>
+<p>If you are using bridge network which has default route then you can directly install flannel using below command.
+However if you had given host-only adapter IP address for API server. then skip this step and follow next steps.</p>
 <div class="listingblock">
 <div class="content">
 <pre class="CodeRay highlight nowrap"><code data-lang="shell">$ kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml</code></pre>
 </div>
+</div>
+</li>
+<li>
+<p>Download flannel.yaml</p>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="sh">$ wget https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Open <code>kube-flannel.yaml</code> file search for daemonset kind and add additional arugment <code>--iface=&lt;host-only-adaper-interface&gt;</code>, note there are
+multiple daemonset definitions, either update all of them or execute <code>kubectl get nodes --show-labels</code> and get the arch and update corresponding
+arch daemonset only.</p>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="yaml">      <span class="key">containers</span>:
+      - <span class="string"><span class="content">name: kube-flannel</span></span>
+        <span class="key">image</span>: <span class="string"><span class="content">quay.io/coreos/flannel:v0.11.0-amd64</span></span>
+        <span class="key">command</span>:
+        - <span class="string"><span class="content">/opt/bin/flanneld</span></span>
+        <span class="key">args</span>:
+        - <span class="string"><span class="content">--ip-masq</span></span>
+        - <span class="string"><span class="content">--kube-subnet-mgr</span></span>
+        - <span class="string"><span class="content">--iface=enp0s3 </span></span><i class="conum" data-value="1"></i><b>(1)</b>
+        <span class="key">resources</span>:
+          <span class="key">requests</span>:
+            <span class="key">cpu</span>: <span class="string"><span class="delimiter">&quot;</span><span class="content">100m</span><span class="delimiter">&quot;</span></span>
+            <span class="key">memory</span>: <span class="string"><span class="delimiter">&quot;</span><span class="content">50Mi</span><span class="delimiter">&quot;</span></span>
+          <span class="key">limits</span>:</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Added my host-only adapter here</td>
+</tr>
+</table>
+</div>
+</li>
+<li>
+<p>if you had changed pod network while executing <code>kubeadm init</code>, replace <code>10.244.0.0/16</code>
+which chosen pod network above in <code>net-conf.json</code> section.</p>
+</li>
+<li>
+<p>Now Create pod netwrok by applying updated yaml file</p>
+<div class="listingblock">
+<div class="content">
+<pre>$ kubectl apply -f kube-flannel.yaml</pre>
+</div>
+</div>
+</li>
+</ol>
 </div>
 </li>
 <li>
@@ -1248,6 +1361,18 @@ k8s-s1       Ready    &lt;none&gt;   2m49s   v1.13.2</code></pre>
 </ol>
 </div>
 </div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_troubleshoot"><a class="anchor" href="#_troubleshoot"></a>Troubleshoot.</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p><a href="https://kubernetes.io/docs/tasks/administer-cluster/dns-debugging-resolution/" class="bare">https://kubernetes.io/docs/tasks/administer-cluster/dns-debugging-resolution/</a> - DNS not resolving</p>
+</div>
+<div class="paragraph">
+<p><a href="https://kubernetes.io/docs/setup/independent/troubleshooting-kubeadm/" class="bare">https://kubernetes.io/docs/setup/independent/troubleshooting-kubeadm/</a> - kubeadm</p>
+</div>
 <div class="sect3">
 <h4 id="_references"><a class="anchor" href="#_references"></a>References</h4>
 <div class="paragraph">
@@ -1263,10 +1388,9 @@ k8s-s1       Ready    &lt;none&gt;   2m49s   v1.13.2</code></pre>
 </div>
 </div>
 </div>
-</div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2019-05-09 00:10:25 +0530
+Last updated 2019-05-13 00:05:21 +0530
 </div>
 </div>
 <style>

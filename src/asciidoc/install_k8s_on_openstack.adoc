@@ -494,8 +494,8 @@ helm version
 ----
 $ helm install --name kubernetes-dashboard \
     --set service.type=NodePort,rbac.clusterAdminRole=true \
-	--namespace kube-system 
-	--debug stable/kubernetes-dashboard
+    --namespace kube-system \
+    --debug stable/kubernetes-dashboard
 ----
 . Execute below command to get the node port to access dashboard
 +

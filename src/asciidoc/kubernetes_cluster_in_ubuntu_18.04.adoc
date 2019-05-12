@@ -96,6 +96,23 @@ network:
  version: 2
 ----
 
+* Update `/etc/hosts` such that command `hostname -i` outputs ip which is routable from other VM.
++
+.example(master)
+----
+192.168.56.10 k8s-master
+192.168.56.12 k8s-s1
+----
++
+.example(slave)
+----
+192.168.56.10 k8s-master
+192.168.56.12 k8s-s1
+----
++
+NOTE: This step is required since we've chosen host-only adapter and our default route is provider by NAT
+network, if we choose Bridge network this step can be skipped.
+
 * Reboot VMs.
 
 //tag::packageUpdate[]
@@ -172,7 +189,7 @@ NOTE: Browse http://apt.kubernetes.io/ and search for the corresponding ubuntu v
 +
 [source, shell,options="nowrap"]
 ----
-$ sudo apt update; sudo apt install kubeadm
+$ sudo apt update; sudo apt install kubeadm kubelet kubectl
 ----
 . Turn off swap
 +
@@ -180,7 +197,11 @@ $ sudo apt update; sudo apt install kubeadm
 ----
 $ sudo swapoff -a
 ----	
-. Commanent out any line containing swap in `/etc/fstab`
+. Turn off swap permanently in `/etc/fstab` by executing belo command.
++
+----
+$ sudo sed -i '/ swap / s/^\(.*\)$/#\1/g' /etc/fstab
+----
 +
 IMPORTANT:  If 4 and 5 steps not followed, kubelet service will not start.
 
@@ -227,9 +248,14 @@ sudo systemctl restart docker
 +
 [source%autofit, shell,options="nowrap"]
 ----
-$ sudo kubeadm init --apiserver-advertise-address=192.168.56.10 \
-	 --pod-network-cidr=10.244.0.0/16
+$ kubeadm init --apiserver-advertise-address=192.168.56.9 \
+   --apiserver-cert-extra-sans=192.168.56.9  \
+   --pod-network-cidr=10.244.0.0/16 -v 1
 ----
++
+WARNING: If decide to change pod network remember to change the pod network in `flannel.yaml`
+while setting up pod network in below step. 
++
 . As output of above command shows to execute below command, run below command to update auth details
 for `kubectl` command.
 +
@@ -244,10 +270,53 @@ $ sudo chown $(id -u):$(id -g) $HOME/.kube/config
 
 . Install pod network.
 +
+.. If you are using bridge network which has default route then you can directly install flannel using below command.
+However if you had given host-only adapter IP address for API server. then skip this step and follow next steps.
++
 [source%autofit, shell,options="nowrap"]
 ----
 $ kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
-----	
+----
+
+.. Download flannel.yaml
++
+[source%autofit,sh]
+----
+$ wget https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
+----
+
+.. Open `kube-flannel.yaml` file search for daemonset kind and add additional arugment `--iface=<host-only-adaper-interface>`, note there are
+multiple daemonset definitions, either update all of them or execute `kubectl get nodes --show-labels` and get the arch and update corresponding
+arch daemonset only.
++
+[source,yaml,]
+----
+      containers:
+      - name: kube-flannel
+        image: quay.io/coreos/flannel:v0.11.0-amd64
+        command:
+        - /opt/bin/flanneld
+        args:
+        - --ip-masq
+        - --kube-subnet-mgr
+        - --iface=enp0s3 // <1>
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "50Mi"
+          limits:
+----
+<1> Added my host-only adapter here
+
+.. if you had changed pod network while executing `kubeadm init`, replace `10.244.0.0/16`
+which chosen pod network above in `net-conf.json` section.
+
+.. Now Create pod netwrok by applying updated yaml file
++
+----
+$ kubectl apply -f kube-flannel.yaml
+----
+
 . Verify all necessary pods are started
 +
 [source, shell,options="nowrap"]
@@ -516,6 +585,12 @@ $ helm install --name treafik-ingress --namespace kube-system  --set dashboard.e
 ```
 $ helm install stable/nginx-ingress --name nginx-ingress --set rbac.create=true
 ```
+
+== Troubleshoot.
+
+https://kubernetes.io/docs/tasks/administer-cluster/dns-debugging-resolution/ - DNS not resolving
+
+https://kubernetes.io/docs/setup/independent/troubleshooting-kubeadm/ - kubeadm
 
 ==== References
 

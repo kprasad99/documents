@@ -493,6 +493,8 @@ image::kibana_3.png[Manage columns]
 
 * Log refresh rate and duration to show can be managed by selecting the `Auto refresh` button on top right corner and similarly
 the duration of the logs to display can be configured on date menu adjacent to `Auto refresh button`.
++
+image::kibana_4.png[Manage columns]
 
 == Setup Prometheus
 

@@ -1413,7 +1413,7 @@ Browse <a href="http://apt.kubernetes.io/" class="bare">http://apt.kubernetes.io
 <p>Turn off swap permanently in <code>/etc/fstab</code> by executing belo command.</p>
 <div class="listingblock">
 <div class="content">
-<pre>$ sudo sed -i '/ swap / s/^\(.*\)$/#\1/g' /etc/fstab</pre>
+<pre>$ sudo sed -i '/swap/s/^\(.*\)$/#\1/g' /etc/fstab</pre>
 </div>
 </div>
 <div class="admonitionblock important">

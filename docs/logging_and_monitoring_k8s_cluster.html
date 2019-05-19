@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="generator" content="Asciidoctor 2.0.2">
-<title>Kubernetes MultiNode cluster on VirtualBox</title>
+<title>Logging and monitoring Kubernetes Cluster using EFK and Prometheus</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700">
 <style>
 /* Asciidoctor default stylesheet | MIT License | https://asciidoctor.org */
@@ -438,33 +438,30 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 </head>
 <body class="article">
 <div id="header">
-<h1>Kubernetes MultiNode cluster on VirtualBox</h1>
+<h1>Logging and monitoring Kubernetes Cluster using EFK and Prometheus</h1>
 <div id="toc" class="toc">
 <div id="toctitle">Table of Contents</div>
 <ul class="sectlevel1">
-<li><a href="#_virtualbox_setup">VirtualBox setup</a></li>
-<li><a href="#_vm_hardware_configuration">VM hardware configuration.</a></li>
-<li><a href="#_prepare_servers">Prepare Servers</a>
+<li><a href="#_prerequiste">Prerequiste</a></li>
+<li><a href="#_preface">Preface</a></li>
+<li><a href="#_setup_efk_stack">Setup EFK stack.</a>
 <ul class="sectlevel2">
-<li><a href="#_setup_network">Setup network.</a></li>
-<li><a href="#_install_docker">Install docker</a></li>
+<li><a href="#_verification">Verification</a></li>
 </ul>
 </li>
-<li><a href="#_install_and_configure_kubernetes">Install and configure kubernetes.</a>
+<li><a href="#_setup_elasticsearch_curator">Setup elasticsearch curator</a></li>
+<li><a href="#_setup_fluentbit">Setup Fluentbit</a>
 <ul class="sectlevel2">
-<li><a href="#_prepare_server">Prepare server</a></li>
-<li><a href="#_configure_master_vm">Configure Master VM.</a></li>
-<li><a href="#_configure_kubernetes_dashboad">Configure Kubernetes Dashboad.</a></li>
-<li><a href="#_configuration_slave_node">Configuration slave node.</a></li>
-<li><a href="#_install_helm">Install Helm</a></li>
-<li><a href="#_install_ingress_controller">Install Ingress controller</a></li>
+<li><a href="#_verification_2">Verification</a></li>
 </ul>
 </li>
-<li><a href="#_troubleshoot">Troubleshoot.</a>
-<ul class="sectlevel3">
-<li><a href="#_references">References</a></li>
+<li><a href="#_setup_kibana">Setup Kibana</a>
+<ul class="sectlevel2">
+<li><a href="#_configure_kibana_ui">Configure Kibana UI.</a></li>
 </ul>
 </li>
+<li><a href="#_setup_prometheus">Setup Prometheus</a></li>
+<li><a href="#_todo">TODO</a></li>
 </ul>
 </div>
 </div>
@@ -472,342 +469,68 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <div id="preamble">
 <div class="sectionbody">
 <div class="paragraph">
-<p>A step by step description of bringing up kubernetes cluster using VirtualBox 6.0 with ubuntu 18.04 server.</p>
+<p>Steps describing how to enable logging and monitoring kubernetes cluster using EFK(Elasctisearch Fluentbit Kibana) and
+Prometheus respectively.</p>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_virtualbox_setup"><a class="anchor" href="#_virtualbox_setup"></a>VirtualBox setup</h2>
+<h2 id="_prerequiste"><a class="anchor" href="#_prerequiste"></a>Prerequiste</h2>
 <div class="sectionbody">
-<div class="paragraph">
-<p>Create two VMs k8s-master and k8s-s1 as shown in below diagram.</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre>    +----------------+                       +----------------+
-    |                |                       |                |
-    |   K8s-master   |                       |   K8s-s1       |
-    |                |                       |                |
-    | IF2        IF1 |                       | IF1        IF2 |
-    +--+----------+--+                       +---+---------+--+
-       |          |                              |         |
-       |          |       Host only Network      |         |
-       |          +------------------------------+         |
-      NAT                  192.168.56.0/24               NAT
-
-
-                          VirtualBox VM setup</pre>
-</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Up and running kubernetes cluster.</p>
+</li>
+<li>
+<p>We will be using Helm charts, hence helm chart must be available.</p>
+</li>
+</ul>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_vm_hardware_configuration"><a class="anchor" href="#_vm_hardware_configuration"></a>VM hardware configuration.</h2>
+<h2 id="_preface"><a class="anchor" href="#_preface"></a>Preface</h2>
 <div class="sectionbody">
 <div class="ulist">
 <ul>
 <li>
-<p>Kubernetes master/controller node hardware requirement</p>
+<p>These steps are validated against kubernetes cluster on VirtualBox, with minimal hardware, hence running Elasticsearch in minimalistic setup.</p>
+</li>
+<li>
+<p>Since I&#8217;m using VirtualBox, will be using peristent volume of type local.</p>
+</li>
+<li>
+<p>Using <code>stable/elasticsearch</code> repository instead of elasticsearch official from <a href="https://github.com/elastic/helm-charts/tree/master/elasticsearch">here</a></p>
+</li>
+<li>
+<p>Validated against elasticsearch version <code>6.7.2</code></p>
 </li>
 </ul>
-</div>
-<table class="tableblock frame-all grid-all stretch">
-<colgroup>
-<col style="width: 50%;">
-<col style="width: 50%;">
-</colgroup>
-<tbody>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Component</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Value (min)</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Processor</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">2 core</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">RAM</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">4GB</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Network Adapter-1</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Host only network</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Network Adapter-2</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">NAT</p></td>
-</tr>
-</tbody>
-</table>
-<div class="ulist">
-<ul>
-<li>
-<p>kubernetes worker/slave node hardware requirement</p>
-</li>
-</ul>
-</div>
-<table class="tableblock frame-all grid-all stretch">
-<colgroup>
-<col style="width: 50%;">
-<col style="width: 50%;">
-</colgroup>
-<tbody>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Component</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Value (min)</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Processor</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">1 core</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">RAM</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">2GB</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Network Adapter-1</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Host only network</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Network Adapter-2</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">NAT</p></td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
-<div class="sect1">
-<h2 id="_prepare_servers"><a class="anchor" href="#_prepare_servers"></a>Prepare Servers</h2>
-<div class="sectionbody">
-<div class="paragraph">
-<p>Execute the below step in both the VMs.</p>
-</div>
-<div class="sect2">
-<h3 id="_setup_network"><a class="anchor" href="#_setup_network"></a>Setup network.</h3>
-<div class="ulist">
-<ul>
-<li>
-<p>Shutdown the VMs.</p>
-</li>
-<li>
-<p>Modify VM network, with Adapter 1 for Host Only Network and Adapter 2 for NAT.</p>
-</li>
-<li>
-<p>Start VM.</p>
-</li>
-<li>
-<p>Execute below command and note down the interfaces (generally for Virtual box VMs network interface will start with enp0s).</p>
-<div class="listingblock">
-<div class="content">
-<pre class="CodeRay highlight nowrap"><code data-lang="shell">$ sudo ifconfig -a</code></pre>
-</div>
-</div>
-</li>
-<li>
-<p>Setup static network.</p>
-<div class="paragraph">
-<p>Open file <code>/etc/netplan/50-cloud-init.yaml</code> and add below configuration.</p>
-</div>
-<div class="listingblock">
-<div class="title"><strong>k8s-master</strong></div>
-<div class="content">
-<pre class="CodeRay highlight"><code data-lang="yaml"><span class="key">network</span>:
- <span class="key">ethernets</span>:
-  <span class="key">enp0s3</span>:
-   <span class="key">addresses</span>: <span class="string"><span class="content">[192.168.56.10/24]</span></span>
-   <span class="key">dhcp4</span>: <span class="string"><span class="content">false</span></span>
-  <span class="key">enp0s8</span>:
-   <span class="key">addresses</span>: <span class="string"><span class="content">[]</span></span>
-   <span class="key">dhcp4</span>: <span class="string"><span class="content">true</span></span>
- <span class="key">version</span>: <span class="string"><span class="content">2</span></span></code></pre>
-</div>
-</div>
-<div class="listingblock">
-<div class="title"><strong>k8s-s1</strong></div>
-<div class="content">
-<pre class="CodeRay highlight"><code data-lang="yaml"><span class="key">network</span>:
- <span class="key">ethernets</span>:
-  <span class="key">enp0s3</span>:
-   <span class="key">addresses</span>: <span class="string"><span class="content">[192.168.56.12/24]</span></span>
-   <span class="key">dhcp4</span>: <span class="string"><span class="content">false</span></span>
-  <span class="key">enp0s8</span>:
-   <span class="key">addresses</span>: <span class="string"><span class="content">[]</span></span>
-   <span class="key">dhcp4</span>: <span class="string"><span class="content">true</span></span>
- <span class="key">version</span>: <span class="string"><span class="content">2</span></span></code></pre>
-</div>
-</div>
-</li>
-<li>
-<p>Update <code>/etc/hosts</code> such that command <code>hostname -i</code> outputs ip which is routable from other VM.</p>
-<div class="listingblock">
-<div class="title">example(master)</div>
-<div class="content">
-<pre>192.168.56.10 k8s-master
-192.168.56.12 k8s-s1</pre>
-</div>
-</div>
-<div class="listingblock">
-<div class="title">example(slave)</div>
-<div class="content">
-<pre>192.168.56.10 k8s-master
-192.168.56.12 k8s-s1</pre>
-</div>
-</div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-note" title="Note"></i>
-</td>
-<td class="content">
-This step is required since we&#8217;ve chosen host-only adapter and our default route is provider by NAT
-network, if we choose Bridge network this step can be skipped.
-</td>
-</tr>
-</table>
-</div>
-</li>
-<li>
-<p>Reboot VMs.</p>
-</li>
-</ul>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>Update Packages.</p>
-<div class="ulist">
-<ul>
-<li>
-<p>Update apt sources.</p>
-<div class="listingblock">
-<div class="content">
-<pre class="CodeRay highlight nowrap"><code data-lang="shell">$ sudo apt update</code></pre>
-</div>
-</div>
-</li>
-<li>
-<p>Install packages</p>
-<div class="listingblock">
-<div class="content">
-<pre class="CodeRay highlight nowrap"><code data-lang="shell">$ sudo apt upgrade</code></pre>
-</div>
-</div>
-</li>
-</ul>
-</div>
-</li>
-</ul>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_install_docker"><a class="anchor" href="#_install_docker"></a>Install docker</h3>
-<div class="ulist">
-<ul>
-<li>
-<p>Install utility packages</p>
-<div class="listingblock">
-<div class="content">
-<pre class="CodeRay highlight nowrap"><code data-lang="shell">$ sudo apt install apt-transport-https ca-certificates curl software-properties-common</code></pre>
-</div>
-</div>
-</li>
-<li>
-<p>Add GPG key</p>
-<div class="listingblock">
-<div class="content">
-<pre class="CodeRay highlight nowrap"><code data-lang="shell">$ curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -</code></pre>
-</div>
-</div>
-</li>
-<li>
-<p>Add docker repository to apt sources.</p>
-<div class="listingblock">
-<div class="content">
-<pre class="CodeRay highlight nowrap"><code data-lang="shell">$ sudo add-apt-repository &quot;deb [arch=amd64] https://download.docker.com/linux/ubuntu bionic stable&quot;</code></pre>
-</div>
-</div>
-</li>
-<li>
-<p>Update apt sources and install docker</p>
-<div class="listingblock">
-<div class="content">
-<pre class="CodeRay highlight nowrap"><code data-lang="shell">$ sudo apt update ; sudo apt install docker-ce</code></pre>
-</div>
-</div>
-</li>
-<li>
-<p>Verify docker service is started.</p>
-<div class="listingblock">
-<div class="content">
-<pre class="CodeRay highlight nowrap"><code data-lang="shell">$ sudo systemctl status docker</code></pre>
-</div>
-</div>
-</li>
-</ul>
-</div>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_install_and_configure_kubernetes"><a class="anchor" href="#_install_and_configure_kubernetes"></a>Install and configure kubernetes.</h2>
+<h2 id="_setup_efk_stack"><a class="anchor" href="#_setup_efk_stack"></a>Setup EFK stack.</h2>
 <div class="sectionbody">
-<div class="sect2">
-<h3 id="_prepare_server"><a class="anchor" href="#_prepare_server"></a>Prepare server</h3>
-<div class="paragraph">
-<p>Execute the below steps on both the VMs.</p>
-</div>
-<div class="olist arabic">
-<ol class="arabic">
+<div class="ulist">
+<ul>
 <li>
-<p>Add Kubernetes source gpg.</p>
+<p>Update Helm repository.</p>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight nowrap"><code data-lang="shell">$ curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -</code></pre>
+<pre class="CodeRay highlight"><code data-lang="sh">$ helm repo update</code></pre>
 </div>
 </div>
 </li>
 <li>
-<p>Next add kubernetes repository</p>
+<p>We will be running 2 master node (though Ideally quorum would be an odd number), 1 client(coordinator) node and 1 data node. Coordinator node
+does not require volume, thus we need 3 PV. Create directories for 3 PVs.</p>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight nowrap"><code data-lang="shell">$ sudo apt-add-repository &quot;deb http://apt.kubernetes.io/ kubernetes-xenial main&quot;</code></pre>
-</div>
-</div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-note" title="Note"></i>
-</td>
-<td class="content">
-Browse <a href="http://apt.kubernetes.io/" class="bare">http://apt.kubernetes.io/</a> and search for the corresponding ubuntu version, since there was no kubernetes-bionic, installing kubernetes-xenial in my case.
-</td>
-</tr>
-</table>
-</div>
-</li>
-<li>
-<p>Install <code>kubeadm</code></p>
-<div class="listingblock">
-<div class="content">
-<pre class="CodeRay highlight nowrap"><code data-lang="shell">$ sudo apt update; sudo apt install kubeadm kubelet kubectl</code></pre>
-</div>
-</div>
-</li>
-<li>
-<p>Turn off swap</p>
-<div class="listingblock">
-<div class="content">
-<pre class="CodeRay highlight nowrap"><code data-lang="shell">$ sudo swapoff -a</code></pre>
-</div>
-</div>
-</li>
-<li>
-<p>Turn off swap permanently in <code>/etc/fstab</code> by executing belo command.</p>
-<div class="listingblock">
-<div class="content">
-<pre>$ sudo sed -i '/swap/s/^\(.*\)$/#\1/g' /etc/fstab</pre>
+<pre class="CodeRay highlight"><code data-lang="sh">$ sudo mkdir -p /opt/kubernetes/data/elasticsearch/es0
+$ sudo mkdir -p /opt/kubernetes/data/elasticsearch/es1
+$ sudo mkdir -p /opt/kubernetes/data/elasticsearch/es2</code></pre>
 </div>
 </div>
 <div class="admonitionblock important">
@@ -817,68 +540,210 @@ Browse <a href="http://apt.kubernetes.io/" class="bare">http://apt.kubernetes.io
 <i class="fa icon-important" title="Important"></i>
 </td>
 <td class="content">
-If 4 and 5 steps not followed, kubelet service will not start.
+Since I&#8217;ve one worker node cluster, creating all the es nodes in same worker node hence 3 directories in the same server.
 </td>
 </tr>
 </table>
 </div>
 </li>
 <li>
-<p>Add private ip to kubernetes arguments</p>
-<div class="paragraph">
-<p>While installing <code>kubeadm</code> you might get error related to port forwarding if you are using private IP which is true in our case. To resolve this issue,
-Create file <code>/etc/default/kubelet</code> and following content in the file.</p>
-</div>
+<p>Change permission of the directories</p>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight"><code>KUBELET_EXTRA_ARGS=--node-ip=192.168.56.10</code></pre>
+<pre class="CodeRay highlight"><code data-lang="sh">$ sudo chmod -R g+w /opt/kubernetes/data</code></pre>
 </div>
 </div>
 </li>
 <li>
-<p>Use systemd for cgroups.</p>
-<div class="paragraph">
-<p>Create file <code>/etc/docker/daemon.json</code> and add following content.</p>
-</div>
+<p>Create a peristent volume and storage class to bind the pvs. from below yaml file, using command <code>kubectl apply -f &lt;file-name&gt;.yaml</code></p>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight"><code>{
-  &quot;exec-opts&quot;: [&quot;native.cgroupdriver=systemd&quot;],
-  &quot;log-driver&quot;: &quot;json-file&quot;,
-  &quot;log-opts&quot;: {
-    &quot;max-size&quot;: &quot;100m&quot;
-  },
-  &quot;storage-driver&quot;: &quot;overlay2&quot;
-}</code></pre>
+<pre class="CodeRay highlight"><code data-lang="yaml"><span class="comment"># Source: efk-stack/templates/storage.yaml</span>
+<span class="key">apiVersion</span>: <span class="string"><span class="content">storage.k8s.io/v1</span></span>
+<span class="key">kind</span>: <span class="string"><span class="content">StorageClass</span></span>
+<span class="key">metadata</span>:
+  <span class="key">name</span>: <span class="string"><span class="content">efk-stack-local-storage</span></span>
+  <span class="key">namespace</span>: <span class="string"><span class="content">logging</span></span>
+  <span class="key">labels</span>:
+    <span class="key">app</span>: <span class="string"><span class="content">efk-stack</span></span>
+    <span class="key">chart</span>: <span class="string"><span class="content">efk-stack-0.1.0</span></span>
+    <span class="key">release</span>: <span class="string"><span class="content">efk-stack</span></span>
+    <span class="key">heritage</span>: <span class="string"><span class="content">Tiller</span></span>
+<span class="key">provisioner</span>: <span class="string"><span class="content">kubernetes.io/no-provisioner</span></span>
+<span class="key">volumeBindingMode</span>: <span class="string"><span class="content">Immediate</span></span>
+<span class="comment">#volumeBindingMode: WaitForFirstConsumer</span>
+<span class="comment"># Supported policies: Delete, Retain</span>
+<span class="key">reclaimPolicy</span>: <span class="string"><span class="content">Delete</span></span>
+
+<span class="head"><span class="head">---</span></span>
+
+<span class="key">apiVersion</span>: <span class="string"><span class="content">v1</span></span>
+<span class="key">kind</span>: <span class="string"><span class="content">PersistentVolume</span></span>
+<span class="key">metadata</span>:
+  <span class="key">name</span>: <span class="string"><span class="content">efk-stack-pv-0</span></span>
+  <span class="key">namespace</span>: <span class="string"><span class="content">logging</span></span>
+  <span class="key">labels</span>:
+    <span class="key">app</span>: <span class="string"><span class="content">efk-stack</span></span>
+    <span class="key">chart</span>: <span class="string"><span class="content">efk-stack-0.1.0</span></span>
+    <span class="key">release</span>: <span class="string"><span class="content">efk-stack</span></span>
+    <span class="key">heritage</span>: <span class="string"><span class="content">Tiller</span></span>
+<span class="key">spec</span>:
+  <span class="key">capacity</span>:
+    <span class="key">storage</span>: <span class="string"><span class="content">4Gi</span></span>
+  <span class="comment"># volumeMode field requires BlockVolume Alpha feature gate to be enabled.</span>
+  <span class="key">volumeMode</span>: <span class="string"><span class="content">Filesystem</span></span>
+  <span class="key">accessModes</span>:
+  - <span class="string"><span class="content">ReadWriteOnce</span></span>
+  <span class="key">persistentVolumeReclaimPolicy</span>: <span class="string"><span class="content">Delete</span></span>
+  <span class="key">storageClassName</span>: <span class="string"><span class="content">efk-stack-local-storage</span></span>
+  <span class="key">local</span>:
+    <span class="key">path</span>: <span class="string"><span class="content">/opt/kubernetes/data/elasticsearch/es0</span></span>
+  <span class="key">nodeAffinity</span>:
+    <span class="key">required</span>:
+      <span class="key">nodeSelectorTerms</span>:
+      - <span class="string"><span class="content">matchExpressions:</span></span>
+        - <span class="string"><span class="content">key: disk-available</span></span>
+          <span class="key">operator</span>: <span class="string"><span class="content">In</span></span>
+          <span class="key">values</span>:
+          - <span class="string"><span class="delimiter">&quot;</span><span class="content">true</span><span class="delimiter">&quot;</span></span>
+<span class="head"><span class="head">---</span></span>
+
+<span class="key">apiVersion</span>: <span class="string"><span class="content">v1</span></span>
+<span class="key">kind</span>: <span class="string"><span class="content">PersistentVolume</span></span>
+<span class="key">metadata</span>:
+  <span class="key">name</span>: <span class="string"><span class="content">efk-stack-pv-1</span></span>
+  <span class="key">namespace</span>: <span class="string"><span class="content">logging</span></span>
+  <span class="key">labels</span>:
+    <span class="key">app</span>: <span class="string"><span class="content">efk-stack</span></span>
+    <span class="key">chart</span>: <span class="string"><span class="content">efk-stack-0.1.0</span></span>
+    <span class="key">release</span>: <span class="string"><span class="content">efk-stack</span></span>
+    <span class="key">heritage</span>: <span class="string"><span class="content">Tiller</span></span>
+<span class="key">spec</span>:
+  <span class="key">capacity</span>:
+    <span class="key">storage</span>: <span class="string"><span class="content">4Gi</span></span>
+  <span class="comment"># volumeMode field requires BlockVolume Alpha feature gate to be enabled.</span>
+  <span class="key">volumeMode</span>: <span class="string"><span class="content">Filesystem</span></span>
+  <span class="key">accessModes</span>:
+  - <span class="string"><span class="content">ReadWriteOnce</span></span>
+  <span class="key">persistentVolumeReclaimPolicy</span>: <span class="string"><span class="content">Delete</span></span>
+  <span class="key">storageClassName</span>: <span class="string"><span class="content">efk-stack-local-storage</span></span>
+  <span class="key">local</span>:
+    <span class="key">path</span>: <span class="string"><span class="content">/opt/kubernetes/data/elasticsearch/es1</span></span>
+  <span class="key">nodeAffinity</span>:
+    <span class="key">required</span>:
+      <span class="key">nodeSelectorTerms</span>:
+      - <span class="string"><span class="content">matchExpressions:</span></span>
+        - <span class="string"><span class="content">key: disk-available</span></span>
+          <span class="key">operator</span>: <span class="string"><span class="content">In</span></span>
+          <span class="key">values</span>:
+          - <span class="string"><span class="delimiter">&quot;</span><span class="content">true</span><span class="delimiter">&quot;</span></span>
+
+<span class="head"><span class="head">---</span></span>
+
+<span class="key">apiVersion</span>: <span class="string"><span class="content">v1</span></span>
+<span class="key">kind</span>: <span class="string"><span class="content">PersistentVolume</span></span>
+<span class="key">metadata</span>:
+  <span class="key">name</span>: <span class="string"><span class="content">efk-stack-pv-2</span></span>
+  <span class="key">namespace</span>: <span class="string"><span class="content">logging</span></span>
+  <span class="key">labels</span>:
+    <span class="key">app</span>: <span class="string"><span class="content">efk-stack</span></span>
+    <span class="key">chart</span>: <span class="string"><span class="content">efk-stack-0.1.0</span></span>
+    <span class="key">release</span>: <span class="string"><span class="content">efk-stack</span></span>
+    <span class="key">heritage</span>: <span class="string"><span class="content">Tiller</span></span>
+<span class="key">spec</span>:
+  <span class="key">capacity</span>:
+    <span class="key">storage</span>: <span class="string"><span class="content">4Gi</span></span>
+  <span class="comment"># volumeMode field requires BlockVolume Alpha feature gate to be enabled.</span>
+  <span class="key">volumeMode</span>: <span class="string"><span class="content">Filesystem</span></span>
+  <span class="key">accessModes</span>:
+  - <span class="string"><span class="content">ReadWriteOnce</span></span>
+  <span class="key">persistentVolumeReclaimPolicy</span>: <span class="string"><span class="content">Delete</span></span>
+  <span class="key">storageClassName</span>: <span class="string"><span class="content">efk-stack-local-storage</span></span>
+  <span class="key">local</span>:
+    <span class="key">path</span>: <span class="string"><span class="content">/opt/kubernetes/data/elasticsearch/es2</span></span>
+  <span class="key">nodeAffinity</span>:
+    <span class="key">required</span>:
+      <span class="key">nodeSelectorTerms</span>:
+      - <span class="string"><span class="content">matchExpressions:</span></span>
+        - <span class="string"><span class="content">key: disk-available</span></span>
+          <span class="key">operator</span>: <span class="string"><span class="content">In</span></span>
+          <span class="key">values</span>:
+          - <span class="string"><span class="delimiter">&quot;</span><span class="content">true</span><span class="delimiter">&quot;</span></span></code></pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+PV cannot be deleted before PVCs are deleted, PVCs need to be deleted manaully.
+</td>
+</tr>
+</table>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Download elasticsearch charts and extract.</p>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="sh">$  helm fetch stable/elasticsearch --untar</code></pre>
 </div>
 </div>
 </li>
 <li>
-<p>Reload configuration and restart docker service.</p>
+<p>change directory</p>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight"><code>sudo systemctl daemon-reload
-sudo systemctl restart docker</code></pre>
+<pre class="CodeRay highlight"><code data-lang="sh">$ cd elasticsearch</code></pre>
 </div>
 </div>
 </li>
 <li>
-<p>Reboot VMs.</p>
-</li>
-</ol>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_configure_master_vm"><a class="anchor" href="#_configure_master_vm"></a>Configure Master VM.</h3>
-<div class="olist arabic">
-<ol class="arabic">
+<p>Open values.yaml and update values as described below.</p>
+<div class="ulist">
+<ul>
 <li>
-<p>Initialize kubernetes master node by executing below command.</p>
+<p>Make sure image name is <code>docker.elastic.co/elasticsearch/elasticsearch-oss</code> if you want to use opensourced version.</p>
+</li>
+<li>
+<p>update elasticsearch tag to <code>6.7.2</code></p>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight nowrap"><code data-lang="shell">$ kubeadm init --apiserver-advertise-address=192.168.56.9 \
-   --apiserver-cert-extra-sans=192.168.56.9  \
-   --pod-network-cidr=10.244.0.0/16 -v 1</code></pre>
+<pre class="CodeRay highlight"><code data-lang="yaml"><span class="key">image</span>:
+  <span class="key">repository</span>: <span class="string"><span class="delimiter">&quot;</span><span class="content">docker.elastic.co/elasticsearch/elasticsearch-oss</span><span class="delimiter">&quot;</span></span>
+  <span class="key">tag</span>: <span class="string"><span class="delimiter">&quot;</span><span class="content">6.7.2</span><span class="delimiter">&quot;</span></span>
+  <span class="key">pullPolicy</span>: <span class="string"><span class="delimiter">&quot;</span><span class="content">IfNotPresent</span><span class="delimiter">&quot;</span></span></code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Change <strong>client</strong> and <strong>data</strong> node replica count to 1</p>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="yaml"><span class="key">client</span>:
+  <span class="key">name</span>: <span class="string"><span class="content">client</span></span>
+  <span class="key">replicas</span>: <span class="string"><span class="content">1</span></span>
+  <span class="key">serviceType</span>: <span class="string"><span class="content">ClusterIP</span></span></code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>(Optional)Comment out CPU count both for <strong>client</strong>, <strong>master</strong>  and <strong>data</strong> node</p>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="yaml">  <span class="key">resources</span>:
+    <span class="key">limits</span>:
+      <span class="comment"># cpu: &quot;1&quot;</span>
+      <span class="comment"># memory: &quot;1024Mi&quot;</span>
+    <span class="key">requests</span>:
+      <span class="key">cpu</span>: <span class="string"><span class="delimiter">&quot;</span><span class="content">25m</span><span class="delimiter">&quot;</span></span>
+      <span class="key">memory</span>: <span class="string"><span class="delimiter">&quot;</span><span class="content">512Mi</span><span class="delimiter">&quot;</span></span></code></pre>
 </div>
 </div>
 <div class="admonitionblock warning">
@@ -888,509 +753,443 @@ sudo systemctl restart docker</code></pre>
 <i class="fa icon-warning" title="Warning"></i>
 </td>
 <td class="content">
-If decide to change pod network remember to change the pod network in <code>flannel.yaml</code>
-while setting up pod network in below step.
+This is inline to my hardware constarint, if there is enough CPU you can leave as is.
 </td>
 </tr>
 </table>
 </div>
 </li>
 <li>
-<p>As output of above command shows to execute below command, run below command to update auth details
-for <code>kubectl</code> command.</p>
+<p>Change Master replica count to 2.</p>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight nowrap"><code data-lang="shell">$ mkdir -p $HOME/.kube
-$ sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
-$ sudo chown $(id -u):$(id -g) $HOME/.kube/config</code></pre>
+<pre class="CodeRay highlight"><code data-lang="yaml"><span class="key">master</span>:
+  <span class="key">name</span>: <span class="string"><span class="content">master</span></span>
+  <span class="key">exposeHttp</span>: <span class="string"><span class="content">false</span></span>
+  <span class="key">replicas</span>: <span class="string"><span class="content">2</span></span>
+  <span class="key">heapSize</span>: <span class="string"><span class="delimiter">&quot;</span><span class="content">512m</span><span class="delimiter">&quot;</span></span></code></pre>
 </div>
 </div>
 </li>
 <li>
-<p>Note down (copy to textpad) the <code>kubeadm</code> join command which needs to be executed on slave nodes to join to the cluster, we not run the command now, instead we will execute once dashboard is installed as we need dashboard to be installed on master node.</p>
-</li>
-<li>
-<p>Install pod network.</p>
-<div class="olist loweralpha">
-<ol class="loweralpha" type="a">
-<li>
-<p>If you are using bridge network which has default route then you can directly install flannel using below command.
-However if you had given host-only adapter IP address for API server. then skip this step and follow next steps.</p>
+<p>On <strong>data</strong> and <strong>master</strong> node section update disk size to 4Gi as we have created pv with 4Gi and uncomment storageClassName and provide the
+stoage class name we created earlier.</p>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight nowrap"><code data-lang="shell">$ kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml</code></pre>
+<pre>  persistence:
+    enabled: true
+    accessMode: ReadWriteOnce
+    name: data
+    size: "4Gi"
+    storageClass: "efk-stack-local-storage"</pre>
 </div>
+</div>
+</li>
+</ul>
 </div>
 </li>
 <li>
-<p>Download flannel.yaml</p>
+<p>Create elasticsearch cluster using helm command.</p>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight"><code data-lang="sh">$ wget https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml</code></pre>
+<pre class="CodeRay highlight"><code data-lang="sh">$  helm install . --name efk-stack-elastic --namespace logging --debug</code></pre>
 </div>
 </div>
 </li>
-<li>
-<p>Open <code>kube-flannel.yaml</code> file search for daemonset kind and add additional arugment <code>--iface=&lt;host-only-adaper-interface&gt;</code>, note there are
-multiple daemonset definitions, either update all of them or execute <code>kubectl get nodes --show-labels</code> and get the arch and update corresponding
-arch daemonset only.</p>
-<div class="listingblock">
-<div class="content">
-<pre class="CodeRay highlight"><code data-lang="yaml">      <span class="key">containers</span>:
-      - <span class="string"><span class="content">name: kube-flannel</span></span>
-        <span class="key">image</span>: <span class="string"><span class="content">quay.io/coreos/flannel:v0.11.0-amd64</span></span>
-        <span class="key">command</span>:
-        - <span class="string"><span class="content">/opt/bin/flanneld</span></span>
-        <span class="key">args</span>:
-        - <span class="string"><span class="content">--ip-masq</span></span>
-        - <span class="string"><span class="content">--kube-subnet-mgr</span></span>
-        - <span class="string"><span class="content">--iface=enp0s3 </span></span><i class="conum" data-value="1"></i><b>(1)</b>
-        <span class="key">resources</span>:
-          <span class="key">requests</span>:
-            <span class="key">cpu</span>: <span class="string"><span class="delimiter">&quot;</span><span class="content">100m</span><span class="delimiter">&quot;</span></span>
-            <span class="key">memory</span>: <span class="string"><span class="delimiter">&quot;</span><span class="content">50Mi</span><span class="delimiter">&quot;</span></span>
-          <span class="key">limits</span>:</code></pre>
-</div>
-</div>
-<div class="colist arabic">
-<table>
-<tr>
-<td><i class="conum" data-value="1"></i><b>1</b></td>
-<td>Added my host-only adapter here</td>
-</tr>
-</table>
-</div>
-</li>
-<li>
-<p>if you had changed pod network while executing <code>kubeadm init</code>, replace <code>10.244.0.0/16</code>
-which chosen pod network above in <code>net-conf.json</code> section.</p>
-</li>
-<li>
-<p>Now Create pod netwrok by applying updated yaml file</p>
-<div class="listingblock">
-<div class="content">
-<pre>$ kubectl apply -f kube-flannel.yaml</pre>
-</div>
-</div>
-</li>
-</ol>
-</div>
-</li>
-<li>
-<p>Verify all necessary pods are started</p>
-<div class="listingblock">
-<div class="content">
-<pre class="CodeRay highlight nowrap"><code data-lang="shell">$ kubectl get pods --all-namespaces</code></pre>
-</div>
-</div>
-<div class="listingblock">
-<div class="title">output:</div>
-<div class="content">
-<pre class="CodeRay highlight nowrap"><code data-lang="shell">NAMESPACE     NAME                                 READY   STATUS    RESTARTS   AGE
-kube-system   coredns-86c58d9df4-c68gd             1/1     Running   0          6m41s
-kube-system   coredns-86c58d9df4-q5bht             1/1     Running   0          6m41s
-kube-system   etcd-k8s-master                      1/1     Running   0          6m6s
-kube-system   kube-apiserver-k8s-master            1/1     Running   0          5m59s
-kube-system   kube-controller-manager-k8s-master   1/1     Running   0          5m56s
-kube-system   kube-flannel-ds-amd64-stb29          1/1     Running   0          49s
-kube-system   kube-proxy-882ms                     1/1     Running   0          6m41s
-kube-system   kube-scheduler-k8s-master            1/1     Running   0          5m54s</code></pre>
-</div>
-</div>
-</li>
-</ol>
-</div>
+</ul>
 </div>
 <div class="sect2">
-<h3 id="_configure_kubernetes_dashboad"><a class="anchor" href="#_configure_kubernetes_dashboad"></a>Configure Kubernetes Dashboad.</h3>
-<div class="sect3">
-<h4 id="_install_dashboard"><a class="anchor" href="#_install_dashboard"></a>Install Dashboard</h4>
-<div class="olist arabic">
-<ol class="arabic">
+<h3 id="_verification"><a class="anchor" href="#_verification"></a>Verification</h3>
+<div class="ulist">
+<ul>
 <li>
-<p>Deploy dashboard.</p>
+<p>Wait untill 4 Pods comes up and state changes to Ready.</p>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight nowrap"><code data-lang="shell">$ kubectl create -f https://raw.githubusercontent.com/kubernetes/dashboard/master/aio/deploy/recommended/kubernetes-dashboard.yaml</code></pre>
+<pre class="CodeRay highlight"><code data-lang="sh">$ kubectl get po -n logging</code></pre>
 </div>
 </div>
 </li>
 <li>
-<p>Wait till dashboard pod is running.</p>
-<div class="listingblock">
-<div class="content">
-<pre class="CodeRay highlight nowrap"><code data-lang="shell">$ kubectl get pods --all-namespaces</code></pre>
-</div>
-</div>
-<div class="listingblock">
-<div class="title">output:</div>
-<div class="content">
-<pre class="CodeRay highlight nowrap"><code data-lang="shell">NAMESPACE     NAME                                   READY   STATUS    RESTARTS   AGE
-kube-system   coredns-86c58d9df4-c68gd               1/1     Running   0          11m
-kube-system   coredns-86c58d9df4-q5bht               1/1     Running   0          11m
-kube-system   etcd-k8s-master                        1/1     Running   0          10m
-kube-system   kube-apiserver-k8s-master              1/1     Running   0          10m
-kube-system   kube-controller-manager-k8s-master     1/1     Running   0          10m
-kube-system   kube-flannel-ds-amd64-stb29            1/1     Running   0          5m18s
-kube-system   kube-proxy-882ms                       1/1     Running   0          11m
-kube-system   kube-scheduler-k8s-master              1/1     Running   0          10m
-kube-system   kubernetes-dashboard-57df4db6b-5phx2   1/1     Running   0          35s</code></pre>
-</div>
-</div>
-</li>
-<li>
-<p>By default dashboard cannot be accessed from outside the VM, if you are using ubuntu desktop you can run below command and
-access the dashboard using proxy at url  <code><a href="http://localhost:8001/api/v1/namespaces/kube-system/services/https:kubernetes-dashboard:/proxy/" class="bare">http://localhost:8001/api/v1/namespaces/kube-system/services/https:kubernetes-dashboard:/proxy/</a></code></p>
-<div class="listingblock">
-<div class="content">
-<pre class="CodeRay highlight nowrap"><code data-lang="shell">$ kubectl proxy</code></pre>
-</div>
-</div>
-<div class="olist loweralpha">
-<ol class="loweralpha" type="a">
-<li>
-<p>However if you want dashboard be accessed from external ip editing kubernetes-dashboard service and changing type from ClusterIP to NodePort.</p>
-<div class="listingblock">
-<div class="content">
-<pre class="CodeRay highlight nowrap"><code data-lang="shell">$ kubectl edit service kubernetes-dashboard -n kube-system</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>The file content should something as shown below</p>
-</div>
+<p>Create a busybox pod from below yaml</p>
 <div class="listingblock">
 <div class="content">
 <pre class="CodeRay highlight"><code data-lang="yaml"><span class="key">apiVersion</span>: <span class="string"><span class="content">v1</span></span>
-<span class="key">kind</span>: <span class="string"><span class="content">Service</span></span>
+<span class="key">kind</span>: <span class="string"><span class="content">Pod</span></span>
 <span class="key">metadata</span>:
-  <span class="key">creationTimestamp</span>: <span class="string"><span class="delimiter">&quot;</span><span class="content">2019-01-21T18:06:35Z</span><span class="delimiter">&quot;</span></span>
-  <span class="key">labels</span>:
-    <span class="key">k8s-app</span>: <span class="string"><span class="content">kubernetes-dashboard</span></span>
-  <span class="key">name</span>: <span class="string"><span class="content">kubernetes-dashboard</span></span>
-  <span class="key">namespace</span>: <span class="string"><span class="content">kube-system</span></span>
-  <span class="key">resourceVersion</span>: <span class="string"><span class="delimiter">&quot;</span><span class="content">1885</span><span class="delimiter">&quot;</span></span>
-  <span class="key">selfLink</span>: <span class="string"><span class="content">/api/v1/namespaces/kube-system/services/kubernetes-dashboard</span></span>
-  <span class="key">uid</span>: <span class="string"><span class="content">4a2d8f61-1da7-11e9-9d52-080027aba7cb</span></span>
+  <span class="key">name</span>: <span class="string"><span class="content">busybox</span></span>
+  <span class="key">namespace</span>: <span class="string"><span class="content">default</span></span>
 <span class="key">spec</span>:
-  <span class="key">clusterIP</span>: <span class="string"><span class="content">10.110.253.116</span></span>
-  <span class="key">externalTrafficPolicy</span>: <span class="string"><span class="content">Cluster</span></span>
-  <span class="key">ports</span>:
-  - <span class="string"><span class="content">nodePort: 32608</span></span>
-    <span class="key">port</span>: <span class="string"><span class="content">443</span></span>
-    <span class="key">protocol</span>: <span class="string"><span class="content">TCP</span></span>
-    <span class="key">targetPort</span>: <span class="string"><span class="content">8443</span></span>
-  <span class="key">selector</span>:
-    <span class="key">k8s-app</span>: <span class="string"><span class="content">kubernetes-dashboard</span></span>
-  <span class="key">sessionAffinity</span>: <span class="string"><span class="content">None</span></span>
-  <span class="key">type</span>: <span class="string"><span class="content">ClusterIP </span></span><i class="conum" data-value="1"></i><b>(1)</b>
-<span class="key">status</span>:
-  <span class="key">loadBalancer</span>: <span class="string"><span class="content">{}</span></span></code></pre>
+  <span class="key">containers</span>:
+  - <span class="string"><span class="content">name: busybox</span></span>
+    <span class="key">image</span>: <span class="string"><span class="content">busybox</span></span>
+    <span class="key">command</span>:
+      - <span class="string"><span class="content">sleep</span></span>
+      - <span class="string"><span class="delimiter">&quot;</span><span class="content">3600</span><span class="delimiter">&quot;</span></span>
+    <span class="key">imagePullPolicy</span>: <span class="string"><span class="content">IfNotPresent</span></span>
+  <span class="key">restartPolicy</span>: <span class="string"><span class="content">Always</span></span></code></pre>
 </div>
-</div>
-<div class="colist arabic">
-<table>
-<tr>
-<td><i class="conum" data-value="1"></i><b>1</b></td>
-<td>Replace <strong>ClusterIP</strong> with <strong>NodePort</strong></td>
-</tr>
-</table>
-</div>
-</li>
-</ol>
 </div>
 </li>
 <li>
-<p>Execute the below command and note down the port</p>
+<p>Now execute below command to verify elastic search is up and running.</p>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight nowrap"><code data-lang="shell">$ kubectl get service --all-namespaces</code></pre>
+<pre class="CodeRay highlight"><code data-lang="sh">$ kubectl exec busybox -- wget  http://efk-stack-elastic-elasticsearch-client.logging:9200 \
+    -O - \
+    -S</code></pre>
 </div>
 </div>
 <div class="listingblock">
 <div class="title">output:</div>
 <div class="content">
-<pre class="CodeRay highlight nowrap"><code data-lang="shell">NAMESPACE     NAME                   TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)         AGE
-default       kubernetes             ClusterIP   10.96.0.1        &lt;none&gt;        443/TCP         21m
-kube-system   kube-dns               ClusterIP   10.96.0.10       &lt;none&gt;        53/UDP,53/TCP   21m
-kube-system   kubernetes-dashboard   NodePort    10.110.253.116   &lt;none&gt;        443:32608/TCP   10m</code></pre>
-</div>
-</div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-note" title="Note"></i>
-</td>
-<td class="content">
-The dashboard port is <strong>32608</strong> in my case.
-</td>
-</tr>
-</table>
-</div>
-</li>
-<li>
-<p>Now we can access dashboard at URL. <a href="https://192.168.56.10:32608" class="bare">https://192.168.56.10:32608</a></p>
-<div class="admonitionblock caution">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-caution" title="Caution"></i>
-</td>
-<td class="content">
-Port will be dynamically generated and port should be replaced from step 5.
-</td>
-</tr>
-</table>
-</div>
-</li>
-</ol>
-</div>
-</div>
-<div class="sect3">
-<h4 id="_create_service_account_and_access_dashboard"><a class="anchor" href="#_create_service_account_and_access_dashboard"></a>Create service Account and access dashboard.</h4>
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p>Create a service account</p>
-<div class="listingblock">
-<div class="content">
-<pre class="CodeRay highlight nowrap"><code data-lang="shell">$ kubectl create serviceaccount admin-user -n kube-system</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Verification : Below command should list the  admin-user account</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="CodeRay highlight nowrap"><code data-lang="shell">$ kubectl get serviceaccount --all-namespaces</code></pre>
-</div>
-</div>
-</li>
-<li>
-<p>Create Cluster Role binding for the user.</p>
-<div class="listingblock">
-<div class="content">
-<pre class="CodeRay highlight nowrap"><code data-lang="sh">$  kubectl create clusterrolebinding admin-user -n kube-system \
-     --clusterrole=cluster-admin \
-     --serviceaccount=kube-system:admin-user</code></pre>
-</div>
-</div>
-</li>
-<li>
-<p>Generate the Bearer Token to access Dashboard</p>
-<div class="listingblock">
-<div class="content">
-<pre class="CodeRay highlight nowrap"><code data-lang="shell">$ kubectl -n kube-system describe secret $(kubectl -n kube-system get secret | \
-      grep admin-user | \
-      awk '{print $1}')</code></pre>
-</div>
-</div>
-<div class="listingblock">
-<div class="title">output:</div>
-<div class="content">
-<pre class="CodeRay highlight nowrap"><code data-lang="shell">Name:         admin-user-token-4nwz2
-Namespace:    kube-system
-Labels:       &lt;none&gt;
-Annotations:  kubernetes.io/service-account.name: admin-user
-              kubernetes.io/service-account.uid: a1e3ca50-1dab-11e9-9d52-080027aba7cb
+<pre class="CodeRay highlight"><code data-lang="json"><span class="error">C</span><span class="error">o</span><span class="error">n</span><span class="error">n</span><span class="error">e</span><span class="error">c</span><span class="error">t</span><span class="error">i</span><span class="error">n</span><span class="error">g</span> <span class="error">t</span><span class="error">o</span> <span class="error">e</span><span class="error">f</span><span class="error">k</span><span class="error">-</span><span class="error">s</span><span class="error">t</span><span class="error">a</span><span class="error">c</span><span class="error">k</span><span class="error">-</span><span class="error">e</span><span class="error">l</span><span class="error">a</span><span class="error">s</span><span class="error">t</span><span class="error">i</span><span class="error">c</span><span class="error">-</span><span class="error">e</span><span class="error">l</span><span class="error">a</span><span class="error">s</span><span class="error">t</span><span class="error">i</span><span class="error">c</span><span class="error">s</span><span class="error">e</span><span class="error">a</span><span class="error">r</span><span class="error">c</span><span class="error">h</span><span class="error">-</span><span class="error">c</span><span class="error">l</span><span class="error">i</span><span class="error">e</span><span class="error">n</span><span class="error">t</span><span class="error">.</span><span class="error">l</span><span class="error">o</span><span class="error">g</span><span class="error">g</span><span class="error">i</span><span class="error">n</span><span class="error">g</span>:<span class="integer">9200</span> <span class="error">(</span><span class="float">10.111</span><span class="error">.</span><span class="float">238.225</span>:<span class="integer">9200</span><span class="error">)</span>
+  <span class="error">H</span><span class="error">T</span><span class="error">T</span><span class="error">P</span><span class="error">/</span><span class="float">1.1</span> <span class="integer">200</span> <span class="error">O</span><span class="error">K</span>
+  <span class="error">c</span><span class="error">o</span><span class="error">n</span><span class="error">t</span><span class="error">e</span><span class="error">n</span><span class="error">t</span><span class="error">-</span><span class="error">t</span><span class="error">y</span><span class="error">p</span><span class="error">e</span>: <span class="error">a</span><span class="error">p</span><span class="error">p</span><span class="error">l</span><span class="error">i</span><span class="error">c</span><span class="error">a</span><span class="error">t</span><span class="error">i</span><span class="error">o</span><span class="error">n</span><span class="error">/</span><span class="error">j</span><span class="error">s</span><span class="error">o</span><span class="error">n</span><span class="error">;</span> <span class="error">c</span><span class="error">h</span><span class="error">a</span><span class="error">r</span><span class="error">s</span><span class="error">e</span><span class="error">t</span><span class="error">=</span><span class="error">U</span><span class="error">T</span><span class="error">F</span><span class="integer">-8</span>
+  <span class="error">c</span><span class="error">o</span><span class="error">n</span><span class="error">t</span><span class="error">e</span><span class="error">n</span><span class="error">t</span><span class="error">-</span><span class="error">l</span><span class="error">e</span><span class="error">n</span><span class="error">g</span><span class="error">t</span><span class="error">h</span>: <span class="integer">539</span>
 
-Type:  kubernetes.io/service-account-token
+<span class="error">-</span>                    <span class="integer">100</span><span class="error">%</span> <span class="error">|</span><span class="error">*</span><span class="error">*</span><span class="error">*</span><span class="error">*</span><span class="error">*</span><span class="error">*</span><span class="error">*</span><span class="error">*</span><span class="error">*</span><span class="error">*</span><span class="error">*</span><span class="error">*</span><span class="error">*</span><span class="error">*</span><span class="error">*</span><span class="error">*</span><span class="error">*</span><span class="error">*</span><span class="error">*</span><span class="error">*</span><span class="error">*</span><span class="error">*</span><span class="error">*</span><span class="error">*</span><span class="error">*</span><span class="error">*</span><span class="error">*</span><span class="error">*</span><span class="error">*</span><span class="error">*</span><span class="error">*</span><span class="error">|</span>   <span class="integer">539</span>   <span class="integer">0</span>:<span class="integer">0</span><span class="integer">0</span>:<span class="integer">0</span><span class="integer">0</span> <span class="error">E</span><span class="error">T</span><span class="error">A</span>
 
-Data
-====
-ca.crt:     1025 bytes
-namespace:  11 bytes
-token:      eyJhbGciOiJSUzI1NiIsImtpZCI6IiJ9.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2VhY2NvdW50Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9uYW1lc3BhY2UiOiJrdWJlLXN5c3RlbSIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VjcmV0Lm5hbWUiOiJhZG1pbi11c2VyLXRva2VuLTRud3oyIiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZXJ2aWNlLWFjY291bnQubmFtZSI6ImFkbWluLXVzZXIiLCJrdWJlcm5ldGVzLmlvL3NlcnZpY2VhY2NvdW50L3NlcnZpY2UtYWNjb3VudC51aWQiOiJhMWUzY2E1MC0xZGFiLTExZTktOWQ1Mi0wODAwMjdhYmE3Y2IiLCJzdWIiOiJzeXN0ZW06c2VydmljZWFjY291bnQ6a3ViZS1zeXN0ZW06YWRtaW4tdXNlciJ9.YHRkrY1dPsrf1N4LU6qGqCPPl617faeBbHelJAdWXD3TvvZMYnQdMvZuWtFZjVMxXPdgXDud17eCffDXBg5bRAs1sxd7B37IbXVULrYFoMR-B0MjOa3eLx1edO_gvE6ZqpyPpdWxC0hWYI0P9cQ78oyZEZ0RDNctTus0qRpVrHpP5ZIMhfRPknV8zxxF-zGf8Xg8ni1NxUOHHB-DYO1T6gd4v65JgD2ohLS4N9rLpq_MrA7nc13R4sE6zDIgYi5V7kZYz0Zx72qAaV4oOGMDTr0FPP7q3m9SrH8uO3UOUe9tkp_ce8-7V9hJW8AbPHu3rLNBw2dOGnOk59yNe3jv5w</code></pre>
+{
+  <span class="key"><span class="delimiter">&quot;</span><span class="content">name</span><span class="delimiter">&quot;</span></span> : <span class="string"><span class="delimiter">&quot;</span><span class="content">efk-stack-elastic-elasticsearch-client-cf8579b94-zjxxr</span><span class="delimiter">&quot;</span></span>,
+  <span class="key"><span class="delimiter">&quot;</span><span class="content">cluster_name</span><span class="delimiter">&quot;</span></span> : <span class="string"><span class="delimiter">&quot;</span><span class="content">elasticsearch</span><span class="delimiter">&quot;</span></span>,
+  <span class="key"><span class="delimiter">&quot;</span><span class="content">cluster_uuid</span><span class="delimiter">&quot;</span></span> : <span class="string"><span class="delimiter">&quot;</span><span class="content">1n-mUFcJT4C-XPrjb98HHg</span><span class="delimiter">&quot;</span></span>,
+  <span class="key"><span class="delimiter">&quot;</span><span class="content">version</span><span class="delimiter">&quot;</span></span> : {
+    <span class="key"><span class="delimiter">&quot;</span><span class="content">number</span><span class="delimiter">&quot;</span></span> : <span class="string"><span class="delimiter">&quot;</span><span class="content">6.7.2</span><span class="delimiter">&quot;</span></span>,
+    <span class="key"><span class="delimiter">&quot;</span><span class="content">build_flavor</span><span class="delimiter">&quot;</span></span> : <span class="string"><span class="delimiter">&quot;</span><span class="content">oss</span><span class="delimiter">&quot;</span></span>,
+    <span class="key"><span class="delimiter">&quot;</span><span class="content">build_type</span><span class="delimiter">&quot;</span></span> : <span class="string"><span class="delimiter">&quot;</span><span class="content">docker</span><span class="delimiter">&quot;</span></span>,
+    <span class="key"><span class="delimiter">&quot;</span><span class="content">build_hash</span><span class="delimiter">&quot;</span></span> : <span class="string"><span class="delimiter">&quot;</span><span class="content">56c6e48</span><span class="delimiter">&quot;</span></span>,
+    <span class="key"><span class="delimiter">&quot;</span><span class="content">build_date</span><span class="delimiter">&quot;</span></span> : <span class="string"><span class="delimiter">&quot;</span><span class="content">2019-04-29T09:05:50.290371Z</span><span class="delimiter">&quot;</span></span>,
+    <span class="key"><span class="delimiter">&quot;</span><span class="content">build_snapshot</span><span class="delimiter">&quot;</span></span> : <span class="value">false</span>,
+    <span class="key"><span class="delimiter">&quot;</span><span class="content">lucene_version</span><span class="delimiter">&quot;</span></span> : <span class="string"><span class="delimiter">&quot;</span><span class="content">7.7.0</span><span class="delimiter">&quot;</span></span>,
+    <span class="key"><span class="delimiter">&quot;</span><span class="content">minimum_wire_compatibility_version</span><span class="delimiter">&quot;</span></span> : <span class="string"><span class="delimiter">&quot;</span><span class="content">5.6.0</span><span class="delimiter">&quot;</span></span>,
+    <span class="key"><span class="delimiter">&quot;</span><span class="content">minimum_index_compatibility_version</span><span class="delimiter">&quot;</span></span> : <span class="string"><span class="delimiter">&quot;</span><span class="content">5.0.0</span><span class="delimiter">&quot;</span></span>
+  },
+  <span class="key"><span class="delimiter">&quot;</span><span class="content">tagline</span><span class="delimiter">&quot;</span></span> : <span class="string"><span class="delimiter">&quot;</span><span class="content">You Know, for Search</span><span class="delimiter">&quot;</span></span>
+}</code></pre>
 </div>
-</div>
-<div class="paragraph">
-<p>Copy the token and paste it into token field in the URL to Dashboard and login to dashboard.</p>
 </div>
 </li>
-</ol>
+</ul>
 </div>
 </div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_setup_elasticsearch_curator"><a class="anchor" href="#_setup_elasticsearch_curator"></a>Setup elasticsearch curator</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>Download curator</p>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="sh">$ helm fetch stable/elasticsearch-curator --untar</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>change directory.</p>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="sh">cd elasticsearch-curator/</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Add elasticsearch client service as host at <code>confiMaps</code> &#8594; <code>config_yml</code> &#8594; <code>hosts</code> as shown below  in values.yaml</p>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="yaml">  <span class="key">config_yml</span>: <span class="string"><span class="delimiter">|-</span><span class="content">
+    ---
+    client:
+      hosts:
+        - efk-stack-elastic-elasticsearch-client
+      port: 9200</span></span></code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Install curator using below command.</p>
+<div class="listingblock">
+<div class="content">
+<pre>$ helm install . --name efk-stack-curator --namespace logging</pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_setup_fluentbit"><a class="anchor" href="#_setup_fluentbit"></a>Setup Fluentbit</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>Download Fluentbit</p>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="sh">$  helm fetch stable/fluent-bit --untar</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>change directory.</p>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="sh">$  cd fluent-bit/</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Add elasticsearch client service as host at <code>backend</code> &#8594; <code>es</code> &#8594; <code>host</code> and <code>forward</code> type to <code>es</code> as shown below in values.yaml</p>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="yaml"><span class="key">backend</span>:
+  <span class="key">type</span>: <span class="string"><span class="content">es</span></span>
+  <span class="key">forward</span>:
+    <span class="key">host</span>: <span class="string"><span class="content">fluentd</span></span>
+    <span class="key">port</span>: <span class="string"><span class="content">24284</span></span>
+    <span class="key">tls</span>: <span class="string"><span class="delimiter">&quot;</span><span class="content">off</span><span class="delimiter">&quot;</span></span>
+    <span class="key">tls_verify</span>: <span class="string"><span class="delimiter">&quot;</span><span class="content">on</span><span class="delimiter">&quot;</span></span>
+    <span class="key">tls_debug</span>: <span class="string"><span class="content">1</span></span>
+    <span class="key">shared_key</span>:
+  <span class="key">es</span>:
+    <span class="key">host</span>: <span class="string"><span class="content">efk-stack-elastic-elasticsearch-client</span></span>
+    <span class="key">port</span>: <span class="string"><span class="content">9200</span></span>
+    <span class="comment"># Elastic Index Name</span>
+    <span class="key">index</span>: <span class="string"><span class="content">kubernetes_cluster</span></span>
+    <span class="key">type</span>: <span class="string"><span class="content">flb_type</span></span>
+    <span class="key">logstash_prefix</span>: <span class="string"><span class="content">kubernetes_cluster</span></span>
+    <span class="key">replace_dots</span>: <span class="string"><span class="delimiter">&quot;</span><span class="content">On</span><span class="delimiter">&quot;</span></span>
+    <span class="key">time_key</span>: <span class="string"><span class="delimiter">&quot;</span><span class="content">@timestamp</span><span class="delimiter">&quot;</span></span>
+    <span class="comment"># Optional username credential for Elastic X-Pack access</span>
+    <span class="key">http_user</span>:
+    <span class="comment"># Password for user defined in HTTP_User</span>
+    <span class="key">http_passwd</span>:
+    <span class="comment"># Optional TLS encryption to ElasticSearch instance</span>
+    <span class="key">tls</span>: <span class="string"><span class="delimiter">&quot;</span><span class="content">off</span><span class="delimiter">&quot;</span></span>
+    <span class="key">tls_verify</span>: <span class="string"><span class="delimiter">&quot;</span><span class="content">on</span><span class="delimiter">&quot;</span></span>
+    <span class="comment"># TLS certificate for the Elastic (in PEM format). Use if tls=on and tls_verify=on.</span>
+    <span class="key">tls_ca</span>: <span class="string"><span class="delimiter">&quot;</span><span class="delimiter">&quot;</span></span>
+    <span class="comment"># TLS debugging levels = 1-4</span>
+    <span class="key">tls_debug</span>: <span class="string"><span class="content">1</span></span></code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Install fluentbit using below command.</p>
+<div class="listingblock">
+<div class="content">
+<pre>$  helm install . --name efk-stack-fluent-bit --namespace logging</pre>
+</div>
+</div>
+</li>
+</ul>
 </div>
 <div class="sect2">
-<h3 id="_configuration_slave_node"><a class="anchor" href="#_configuration_slave_node"></a>Configuration slave node.</h3>
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p>Now go to slave node and execute the join command previously saved when you were executing kubeadm on master.</p>
-<div class="listingblock">
-<div class="content">
-<pre class="CodeRay highlight nowrap"><code data-lang="shell">$  kubeadm join 192.168.56.10:6443 --token t0j1zi.v5lojsnpjh9r0rbn \
-       --discovery-token-ca-cert-hash sha256:40b1142d9002003ab5b085776b8b8cba4a41ceaafab06429c49eaedc2b2939fa</code></pre>
-</div>
-</div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-note" title="Note"></i>
-</td>
-<td class="content">
-The above command is sample, the values are dynamically generated.
-</td>
-</tr>
-</table>
-</div>
-</li>
-<li>
-<p>Now go back to master and execute the below command, you should be able to see slave node added.</p>
-<div class="listingblock">
-<div class="content">
-<pre class="CodeRay highlight nowrap"><code data-lang="shell">$ kubectl get nodes</code></pre>
-</div>
-</div>
-<div class="listingblock">
-<div class="title">output:</div>
-<div class="content">
-<pre class="CodeRay highlight nowrap"><code data-lang="shell">NAME         STATUS   ROLES    AGE     VERSION
-k8s-master   Ready    master   56m     v1.13.2
-k8s-s1       Ready    &lt;none&gt;   2m49s   v1.13.2</code></pre>
-</div>
-</div>
-</li>
-</ol>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_install_helm"><a class="anchor" href="#_install_helm"></a>Install Helm</h3>
+<h3 id="_verification_2"><a class="anchor" href="#_verification_2"></a>Verification</h3>
 <div class="paragraph">
-<p>Helm package manager consists of helm client and tiller component which runs as pod on k8s. We will install helm client on our master server itself.</p>
+<p>Execute below command to check if fluentbit is successfully started. Ready value should be <code>1</code></p>
 </div>
-<div class="sect3">
-<h4 id="_install_helm_client"><a class="anchor" href="#_install_helm_client"></a>Install helm client.</h4>
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p>Install helm client using snap on master server using below command.</p>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight"><code>$ sudo snap install helm --classic</code></pre>
+<pre class="CodeRay highlight"><code data-lang="sh">$ kubectl get ds -n logging</code></pre>
 </div>
 </div>
-</li>
-<li>
-<p>Verify helm client is running by executing command <code>helm version</code>, it should give version details for client and for server side should return error until we install tiller.</p>
-</li>
-</ol>
-</div>
-</div>
-<div class="sect3">
-<h4 id="_install_tiller"><a class="anchor" href="#_install_tiller"></a>Install Tiller.</h4>
-<div class="paragraph">
-<p>Before installing tiller we need to create RBAC for the tiller pod.</p>
-</div>
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p>Create service account for tiller.</p>
 <div class="listingblock">
+<div class="title">output</div>
 <div class="content">
-<pre class="CodeRay highlight"><code>$ kubectl create serviceaccount -n kube-system tiller</code></pre>
-</div>
-</div>
-</li>
-<li>
-<p>Provide cluster role for the above service account.</p>
-<div class="listingblock">
-<div class="content">
-<pre class="CodeRay highlight"><code>$ kubectl create clusterrolebinding tiller-cluster-rule \
-   --clusterrole cluster-admin \
-   --serviceaccount=kube-system:tiller</code></pre>
-</div>
-</div>
-</li>
-<li>
-<p>Now create tiller using the service account</p>
-<div class="listingblock">
-<div class="content">
-<pre class="CodeRay highlight"><code>helm init --service-account tiller</code></pre>
-</div>
-</div>
-</li>
-<li>
-<p>Wait until tiller pod comes up.</p>
-<div class="listingblock">
-<div class="content">
-<pre class="CodeRay highlight"><code>kubectl get po --all-namespaces --watch</code></pre>
-</div>
-</div>
-</li>
-<li>
-<p>Once tiller pod is up, run <code>helm version</code>, the output provide version details for both client and server.</p>
-</li>
-</ol>
-</div>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_install_ingress_controller"><a class="anchor" href="#_install_ingress_controller"></a>Install Ingress controller</h3>
-<div class="paragraph">
-<p>Optionally if you want to expose Any API/web application install ingress controllers such as NGINX, traefik etc.</p>
-</div>
-<div class="sect5">
-<h6 id="_install_traefik_ingress_controller"><a class="anchor" href="#_install_traefik_ingress_controller"></a>Install Traefik Ingress controller.</h6>
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p>Execute below helm command to install traefik ingress.</p>
-<div class="listingblock">
-<div class="content">
-<pre class="CodeRay highlight"><code>$ helm install --name treafik-ingress --namespace kube-system  --set dashboard.enabled=true --set rbac.enabled=true stable/traefik</code></pre>
-</div>
-</div>
-</li>
-</ol>
-</div>
-</div>
-<div class="sect5">
-<h6 id="_installing_nginx_ingress_controller"><a class="anchor" href="#_installing_nginx_ingress_controller"></a>Installing NGINX ingress controller.</h6>
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p>Execute below helm command to install nginx ingress.</p>
-<div class="listingblock">
-<div class="content">
-<pre class="CodeRay highlight"><code>$ helm install stable/nginx-ingress --name nginx-ingress --set rbac.create=true</code></pre>
-</div>
-</div>
-</li>
-</ol>
+<pre>NAME                   DESIRED   CURRENT   READY   UP-TO-DATE   AVAILABLE   NODE SELECTOR   AGE
+efk-stack-fluent-bit   1         1         1       1            1           &lt;none&gt;          14s</pre>
 </div>
 </div>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="_troubleshoot"><a class="anchor" href="#_troubleshoot"></a>Troubleshoot.</h2>
+<h2 id="_setup_kibana"><a class="anchor" href="#_setup_kibana"></a>Setup Kibana</h2>
 <div class="sectionbody">
-<div class="paragraph">
-<p><a href="https://kubernetes.io/docs/tasks/administer-cluster/dns-debugging-resolution/" class="bare">https://kubernetes.io/docs/tasks/administer-cluster/dns-debugging-resolution/</a> - DNS not resolving</p>
+<div class="ulist">
+<ul>
+<li>
+<p>Download kibana</p>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="sh">$  helm fetch stable/kibana --untar</code></pre>
 </div>
-<div class="paragraph">
-<p><a href="https://kubernetes.io/docs/setup/independent/troubleshooting-kubeadm/" class="bare">https://kubernetes.io/docs/setup/independent/troubleshooting-kubeadm/</a> - kubeadm</p>
 </div>
-<div class="sect3">
-<h4 id="_references"><a class="anchor" href="#_references"></a>References</h4>
-<div class="paragraph">
-<p><a href="https://github.com/helm/charts/tree/master/stable/traefik" class="bare">https://github.com/helm/charts/tree/master/stable/traefik</a> - traefik</p>
+</li>
+<li>
+<p>change directory.</p>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="sh">$  cd kibana/</code></pre>
 </div>
-<div class="paragraph">
-<p><a href="https://github.com/helm/charts/tree/master/stable/nginx-ingress" class="bare">https://github.com/helm/charts/tree/master/stable/nginx-ingress</a> - nginx</p>
 </div>
-<div class="paragraph">
-<p><a href="https://kubernetes.io/docs/concepts/services-networking/ingress/" class="bare">https://kubernetes.io/docs/concepts/services-networking/ingress/</a> - ingress controller concepts</p>
+</li>
+<li>
+<p>Add elasticsearch client service as host at <code>files</code> &#8594; <code>kibana.yml</code> &#8594; <code>elasticsearch.hosts</code> and service type <code>NodePort</code> as shown below in values.yaml</p>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="yaml"><span class="key">files</span>:
+  <span class="key">kibana.yml</span>:
+    <span class="comment">## Default Kibana configuration from kibana-docker.</span>
+    <span class="key">server.name</span>: <span class="string"><span class="content">kibana</span></span>
+    <span class="key">server.host</span>: <span class="string"><span class="delimiter">&quot;</span><span class="content">0</span><span class="delimiter">&quot;</span></span>
+    <span class="comment">## For kibana &lt; 6.6, use elasticsearch.url instead</span>
+    <span class="key">elasticsearch.hosts</span>: <span class="string"><span class="content">http://efk-stack-elastic-elasticsearch-client:9200</span></span></code></pre>
 </div>
+</div>
+</li>
+<li>
+<p>Install kibana</p>
+<div class="listingblock">
+<div class="content">
+<pre>$  helm install . --name efk-stack-kibana --namespace logging</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Get the Kibana URL by executing below command</p>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="bash">export KIBANA_NODE_PORT=$(kubectl get --namespace logging \
+    -o jsonpath=&quot;{.spec.ports[0].nodePort}&quot; services efk-stack-kibana)
+export KIBANA_NODE_IP=$(kubectl get nodes --namespace logging \
+    -o jsonpath=&quot;{.items[0].status.addresses[0].address}&quot;)
+echo http://$KIBANA_NODE_IP:$KIBANA_NODE_PORT</code></pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+<div class="sect2">
+<h3 id="_configure_kibana_ui"><a class="anchor" href="#_configure_kibana_ui"></a>Configure Kibana UI.</h3>
+<div class="ulist">
+<ul>
+<li>
+<p>Open the url  obaained in previous section in a browser. Since its fresh installation
+page will be automatically redirected to management tab to create index Patterns. Add index
+pattern <code>kubernetes*</code> and click next.</p>
+<div class="imageblock">
+<div class="content">
+<img src="data:image/png;base64," alt="Create Index Pattern">
+</div>
+</div>
+</li>
+<li>
+<p>Select time filter feild as <code>@timestamp</code> and click <code>create index pattern</code></p>
+<div class="imageblock">
+<div class="content">
+<img src="data:image/png;base64," alt="Additional Index Pattern Settings">
+</div>
+</div>
+</li>
+<li>
+<p>Now select <code>discovery</code> menu from side nav menu, already logs will start appearing., Now you can add/remove columns
+to display from Available fields by hovering on field and clicking add button, remove columns can be done by unselecting
+the fields from selected fields.</p>
+<div class="imageblock">
+<div class="content">
+<img src="data:image/png;base64," alt="Manage columns">
+</div>
+</div>
+</li>
+<li>
+<p>Log refresh rate and duration to show can be managed by selecting the <code>Auto refresh</code> button on top right corner and similarly
+the duration of the logs to display can be configured on date menu adjacent to <code>Auto refresh button</code>.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_setup_prometheus"><a class="anchor" href="#_setup_prometheus"></a>Setup Prometheus</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>Download Prometheus operator</p>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="sh">$ helm fetch stable/prometheus-operator --untar</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>change directory.</p>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="sh">$  cd prometheus-operator/</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Install prometheus operator</p>
+<div class="listingblock">
+<div class="content">
+<pre>$  helm install . --name prometheus --namespace monitoring</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Edit grafana service from cluster ip to node port</p>
+<div class="listingblock">
+<div class="content">
+<pre>$ kubectl edit svc -n monitoring  prometheus-grafana</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Get the grafan url by executing below command.</p>
+<div class="listingblock">
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="sh">export GRAFANA_NODE_PORT=$(kubectl get --namespace monitoring \
+    -o jsonpath=&quot;{.spec.ports[0].nodePort}&quot; services  prometheus-grafana)
+export GRAFANA_NODE_IP=$(kubectl get nodes --namespace monitoring \
+    -o jsonpath=&quot;{.items[0].status.addresses[0].address}&quot;)
+echo http://$GRAFANA_NODE_IP:$GRAFANA_NODE_PORT</code></pre>
+</div>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+Default username/password is admin/prom-operator
+</td>
+</tr>
+</table>
+</div>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_todo"><a class="anchor" href="#_todo"></a>TODO</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>Add Steps to enable spring boot logs as fields in FluentBit before sending to Elasticsearch.</p>
+</li>
+<li>
+<p>Add Steps to enable spring boot metrics to be fetch by Promethus using annotations.</p>
+</li>
+</ul>
 </div>
 </div>
 </div>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2019-05-18 22:06:06 +0530
+Last updated 2019-05-20 00:04:17 +0530
 </div>
 </div>
 <style>

@@ -104,7 +104,7 @@ $ cd devstack
 +
 [source,sh]
 ----
-$ wget -c  https://gist.githubusercontent.com/kprasad99/f4cfa3ef7e2548685c9f7e214046f071/raw/040eeff5ed2aea89d3e1f84724fd6280e2691f1a/local.k8s.conf \
+$ wget -c  https://gist.githubusercontent.com/kprasad99/f4cfa3ef7e2548685c9f7e214046f071/raw/fb2b4b2c1fe3efa060d98025c40285bf9e2bc913/local.k8s.conf \
 	   -O local.conf
 ----
 +

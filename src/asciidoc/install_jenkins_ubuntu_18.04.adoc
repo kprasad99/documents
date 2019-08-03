@@ -1,10 +1,10 @@
 = Install Jenkins Server on Ubuntu 18.04
 
-=== Prerequiste
+== Prerequiste
 
 * JDK-8
 
-=== Installtion
+== Installtion
 
 * Update Jenkins key cache. 
 +
@@ -44,7 +44,7 @@ TIP: If your `/etc/init.d/jenkins` file fails to start Jenkins, edit the `/etc/d
 
 * While configuring on UI select `Install recommended plugins`.
 
-==== Configure Email Notification using Gmail.
+=== Configure Email Notification using Gmail.
 
 * Go to Manager Jenkins --> Configure System.
 * Goto Extending Email Notification section. Fill details as shown in below screenshot with your email address.  SMTP Server is `smtp.gmail.com`, select adavanced option and set username and password(password should be your app code) set `USE SSL` with Port `465`

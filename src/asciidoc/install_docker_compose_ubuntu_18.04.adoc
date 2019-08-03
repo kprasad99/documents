@@ -1,0 +1,24 @@
+= Install Compose on Ubuntu 18.04
+
+The Docker Compose binary cam be downloaded from the Compose repository release page on GitHub.
+
+- Install following dependency packages 
++
+----
+$ sudo apt update && sudo apt install -y py-pip python-dev libffi-dev openssl-dev gcc libc-dev make
+----
+
+- Run this command to download the current stable release of Docker Compose
++
+----
+$ sudo curl -L "https://github.com/docker/compose/releases/download/1.24.1/docker-compose-$(uname -s)-$(uname -m)" \
+    -o /usr/local/bin/docker-compose
+----
++
+NOTE: To install a different version of Compose, substitute 1.24.1 with the version of Compose you want to use.
+
+- Apply executable permissions to the binary:
++
+----
+sudo chmod +x /usr/local/bin/docker-compose
+----

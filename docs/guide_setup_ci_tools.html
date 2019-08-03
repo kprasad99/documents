@@ -447,9 +447,13 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <li><a href="#_install_and_setup_gitlab_on_ubuntu_18_04_server">Install and setup GitLab on Ubuntu 18.04 server.</a></li>
 <li><a href="#_install_openjdk_811_in_ubuntu_18_04">Install OpenJDK 8/11 in Ubuntu 18.04</a></li>
 <li><a href="#_install_jenkins_server_on_ubuntu_18_04">Install Jenkins Server on Ubuntu 18.04</a>
-<ul class="sectlevel2">
+<ul class="sectlevel1">
 <li><a href="#_prerequiste">Prerequiste</a></li>
-<li><a href="#_installtion">Installtion</a></li>
+<li><a href="#_installtion">Installtion</a>
+<ul class="sectlevel2">
+<li><a href="#_configure_email_notification_using_gmail">Configure Email Notification using Gmail.</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li><a href="#_installation_and_configuration_of_docker_in_ubuntu_18_04">Installation and configuration of docker in Ubuntu 18.04</a>
@@ -493,7 +497,7 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <p>In VirtualBox home screen go to Machine Menu and click on New (Machine&#8594;New), which would open VM creation form window.</p>
 <div class="imageblock">
 <div class="content">
-<img src="/home/kprasad/kpworkspace/kp_14012019/documentation/src/asciidoc/images/vm_create_1.png" alt="VM Creation Window">
+<img src="/home/kprasad/kpworkspace/kp_01072019/documents/src/asciidoc/images/vm_create_1.png" alt="VM Creation Window">
 </div>
 </div>
 </li>
@@ -501,7 +505,7 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <p>In VM creation Window set VM name, location to store machine config and logs. and OS type desired(In our case it will be Linux) and version (Ubuntu 18.04).</p>
 <div class="imageblock">
 <div class="content">
-<img src="/home/kprasad/kpworkspace/kp_14012019/documentation/src/asciidoc/images/vm_create_2.png" alt="VM Creation Window">
+<img src="/home/kprasad/kpworkspace/kp_01072019/documents/src/asciidoc/images/vm_create_2.png" alt="VM Creation Window">
 </div>
 </div>
 </li>
@@ -512,7 +516,7 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <p>Select Option <code>Create new Virtual Harddisk now</code> and click <code>create</code>.</p>
 <div class="imageblock">
 <div class="content">
-<img src="/home/kprasad/kpworkspace/kp_14012019/documentation/src/asciidoc/images/vm_create_2.png" alt="VM set HDD">
+<img src="/home/kprasad/kpworkspace/kp_01072019/documents/src/asciidoc/images/vm_create_2.png" alt="VM set HDD">
 </div>
 </div>
 </li>
@@ -520,7 +524,7 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <p>Provide directory location to store VM image, set Hard disk space required(min 20GB) and set Fixed Size Mode so that we get better performance. Let the image type be default VDI. Then click Create Button(It would take couple of minutes to create Allocate Image)</p>
 <div class="imageblock">
 <div class="content">
-<img src="/home/kprasad/kpworkspace/kp_14012019/documentation/src/asciidoc/images/vm_create_3.png" alt="VM Creation Window">
+<img src="/home/kprasad/kpworkspace/kp_01072019/documents/src/asciidoc/images/vm_create_3.png" alt="VM Creation Window">
 </div>
 </div>
 </li>
@@ -531,7 +535,7 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <p>A option will popup to provide OS Image. Browse to OS image location and provide OS image (ubuntu-18.04.1.0-live-server-amd64.iso). Then click on button start.</p>
 <div class="imageblock">
 <div class="content">
-<img src="/home/kprasad/kpworkspace/kp_14012019/documentation/src/asciidoc/images/vm_create_4.png" alt="VM HDD configuration">
+<img src="/home/kprasad/kpworkspace/kp_01072019/documents/src/asciidoc/images/vm_create_4.png" alt="VM HDD configuration">
 </div>
 </div>
 </li>
@@ -539,7 +543,7 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <p>After image is loaded, you will be asked to choose the language, set the desired language.</p>
 <div class="imageblock">
 <div class="content">
-<img src="/home/kprasad/kpworkspace/kp_14012019/documentation/src/asciidoc/images/vm_create_5.png" alt="VM setup">
+<img src="/home/kprasad/kpworkspace/kp_01072019/documents/src/asciidoc/images/vm_create_5.png" alt="VM setup">
 </div>
 </div>
 </li>
@@ -547,7 +551,7 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <p>Next you will be prompted to select keyboard layout, let the default configuration be as it is. Navigate to Done using tab and click enter.</p>
 <div class="imageblock">
 <div class="content">
-<img src="/home/kprasad/kpworkspace/kp_14012019/documentation/src/asciidoc/images/vm_create_6.png" alt="VM Creation Window">
+<img src="/home/kprasad/kpworkspace/kp_01072019/documents/src/asciidoc/images/vm_create_6.png" alt="VM Creation Window">
 </div>
 </div>
 </li>
@@ -555,7 +559,7 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <p>Next you will be prompted to select Network interface, let the default configuration be as it is will change it later on. Navigate to Done using tab and click enter.</p>
 <div class="imageblock">
 <div class="content">
-<img src="/home/kprasad/kpworkspace/kp_14012019/documentation/src/asciidoc/images/vm_create_7.png" alt="VM Creation Window">
+<img src="/home/kprasad/kpworkspace/kp_01072019/documents/src/asciidoc/images/vm_create_7.png" alt="VM Creation Window">
 </div>
 </div>
 </li>
@@ -564,7 +568,7 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 CAUTION: When choosing LVM make sure you&#8217;ve selected added entire disk to VG by default in 18.04 4GB is selected. You can add the Disk at later point as well.</p>
 <div class="imageblock">
 <div class="content">
-<img src="/home/kprasad/kpworkspace/kp_14012019/documentation/src/asciidoc/images/vm_create_8.png" alt="VM Creation Window">
+<img src="/home/kprasad/kpworkspace/kp_01072019/documents/src/asciidoc/images/vm_create_8.png" alt="VM Creation Window">
 </div>
 </div>
 </li>
@@ -572,7 +576,7 @@ CAUTION: When choosing LVM make sure you&#8217;ve selected added entire disk to 
 <p>Navigate through <code>Configure Ubuntu Archive Mirror</code> with default values.</p>
 <div class="imageblock">
 <div class="content">
-<img src="/home/kprasad/kpworkspace/kp_14012019/documentation/src/asciidoc/images/vm_create_9.png" alt="VM Creation Window">
+<img src="/home/kprasad/kpworkspace/kp_01072019/documents/src/asciidoc/images/vm_create_9.png" alt="VM Creation Window">
 </div>
 </div>
 </li>
@@ -580,7 +584,7 @@ CAUTION: When choosing LVM make sure you&#8217;ve selected added entire disk to 
 <p>A summary window will shown describing the Disk Partitions, Navigate to <code>Done</code> option and press Enter.</p>
 <div class="imageblock">
 <div class="content">
-<img src="/home/kprasad/kpworkspace/kp_14012019/documentation/src/asciidoc/images/vm_create_10.png" alt="VM Creation Window">
+<img src="/home/kprasad/kpworkspace/kp_01072019/documents/src/asciidoc/images/vm_create_10.png" alt="VM Creation Window">
 </div>
 </div>
 </li>
@@ -588,7 +592,7 @@ CAUTION: When choosing LVM make sure you&#8217;ve selected added entire disk to 
 <p>Next Profile setup window comes up, fill all the details.</p>
 <div class="imageblock">
 <div class="content">
-<img src="/home/kprasad/kpworkspace/kp_14012019/documentation/src/asciidoc/images/vm_create_11.png" alt="VM Creation Window">
+<img src="/home/kprasad/kpworkspace/kp_01072019/documents/src/asciidoc/images/vm_create_11.png" alt="VM Creation Window">
 </div>
 </div>
 </li>
@@ -596,7 +600,7 @@ CAUTION: When choosing LVM make sure you&#8217;ve selected added entire disk to 
 <p>Once you navigate from profile setup window, it would take sometime to setup OS. Once Setup completes, would prompt to install grub, select yes to install grub, finally after installation click on <code>Reboot</code></p>
 <div class="imageblock">
 <div class="content">
-<img src="/home/kprasad/kpworkspace/kp_14012019/documentation/src/asciidoc/images/vm_create_12.png" alt="VM Creation Window">
+<img src="/home/kprasad/kpworkspace/kp_01072019/documents/src/asciidoc/images/vm_create_12.png" alt="VM Creation Window">
 </div>
 </div>
 </li>
@@ -617,7 +621,7 @@ CAUTION: When choosing LVM make sure you&#8217;ve selected added entire disk to 
 <p>Select the VM, Navigate to Machine&#8594;Settings and select tab Network.</p>
 <div class="imageblock">
 <div class="content">
-<img src="/home/kprasad/kpworkspace/kp_14012019/documentation/src/asciidoc/images/vm_create_13.png" alt="VM Creation Window">
+<img src="/home/kprasad/kpworkspace/kp_01072019/documents/src/asciidoc/images/vm_create_13.png" alt="VM Creation Window">
 </div>
 </div>
 </li>
@@ -625,7 +629,7 @@ CAUTION: When choosing LVM make sure you&#8217;ve selected added entire disk to 
 <p>Select Adapter 1 tab and set <code>attached-to</code> Host-Only Adapter and fill the details as show below.</p>
 <div class="imageblock">
 <div class="content">
-<img src="/home/kprasad/kpworkspace/kp_14012019/documentation/src/asciidoc/images/vm_create_14.png" alt="VM Network Adapter 1">
+<img src="/home/kprasad/kpworkspace/kp_01072019/documents/src/asciidoc/images/vm_create_14.png" alt="VM Network Adapter 1">
 </div>
 </div>
 </li>
@@ -633,7 +637,7 @@ CAUTION: When choosing LVM make sure you&#8217;ve selected added entire disk to 
 <p>Select Adapter 2 tab and set <code>attached-to</code> NAT and fill the details as show below.</p>
 <div class="imageblock">
 <div class="content">
-<img src="/home/kprasad/kpworkspace/kp_14012019/documentation/src/asciidoc/images/vm_create_15.png" alt="VM Network Adapter 2">
+<img src="/home/kprasad/kpworkspace/kp_01072019/documents/src/asciidoc/images/vm_create_15.png" alt="VM Network Adapter 2">
 </div>
 </div>
 </li>
@@ -641,7 +645,7 @@ CAUTION: When choosing LVM make sure you&#8217;ve selected added entire disk to 
 <p>Select Adapter 3 tab and set <code>attached-to</code> Bridged and fill the details as show below.</p>
 <div class="imageblock">
 <div class="content">
-<img src="/home/kprasad/kpworkspace/kp_14012019/documentation/src/asciidoc/images/vm_create_16.png" alt="VM Network Adapter 3">
+<img src="/home/kprasad/kpworkspace/kp_01072019/documents/src/asciidoc/images/vm_create_16.png" alt="VM Network Adapter 3">
 </div>
 </div>
 </li>
@@ -657,7 +661,7 @@ CAUTION: When choosing LVM make sure you&#8217;ve selected added entire disk to 
 <p>Open netplan yaml file at <code>/etc/netplan/50-cloud-init.yaml</code> and set static IP for host-only adapter and dhcp IP auto discovery for NAT and Bridged, For Host-only network before setting up note down the subnet for Host only adapter from VirtualBox Network. You can also setup a static IP from Bridge Network. A sample configuration is as shown below.</p>
 <div class="imageblock">
 <div class="content">
-<img src="/home/kprasad/kpworkspace/kp_14012019/documentation/src/asciidoc/images/vm_create_17.png" alt="VM Network Adapter 3">
+<img src="/home/kprasad/kpworkspace/kp_01072019/documents/src/asciidoc/images/vm_create_17.png" alt="VM Network Adapter 3">
 </div>
 </div>
 </li>
@@ -913,8 +917,9 @@ gitlab_rails['gitlab_email_reply_to'] = 'noreply@example.com'</code></pre>
 </ul>
 </div>
 <h1 id="_install_jenkins_server_on_ubuntu_18_04" class="sect0"><a class="anchor" href="#_install_jenkins_server_on_ubuntu_18_04"></a>Install Jenkins Server on Ubuntu 18.04</h1>
-<div class="sect2">
-<h3 id="_prerequiste"><a class="anchor" href="#_prerequiste"></a>Prerequiste</h3>
+<div class="sect1">
+<h2 id="_prerequiste"><a class="anchor" href="#_prerequiste"></a>Prerequiste</h2>
+<div class="sectionbody">
 <div class="ulist">
 <ul>
 <li>
@@ -923,8 +928,10 @@ gitlab_rails['gitlab_email_reply_to'] = 'noreply@example.com'</code></pre>
 </ul>
 </div>
 </div>
-<div class="sect2">
-<h3 id="_installtion"><a class="anchor" href="#_installtion"></a>Installtion</h3>
+</div>
+<div class="sect1">
+<h2 id="_installtion"><a class="anchor" href="#_installtion"></a>Installtion</h2>
+<div class="sectionbody">
 <div class="ulist">
 <ul>
 <li>
@@ -1002,8 +1009,8 @@ If your <code>/etc/init.d/jenkins</code> file fails to start Jenkins, edit the <
 </li>
 </ul>
 </div>
-<div class="sect3">
-<h4 id="_configure_email_notification_using_gmail"><a class="anchor" href="#_configure_email_notification_using_gmail"></a>Configure Email Notification using Gmail.</h4>
+<div class="sect2">
+<h3 id="_configure_email_notification_using_gmail"><a class="anchor" href="#_configure_email_notification_using_gmail"></a>Configure Email Notification using Gmail.</h3>
 <div class="ulist">
 <ul>
 <li>
@@ -1013,7 +1020,7 @@ If your <code>/etc/init.d/jenkins</code> file fails to start Jenkins, edit the <
 <p>Goto Extending Email Notification section. Fill details as shown in below screenshot with your email address.  SMTP Server is <code>smtp.gmail.com</code>, select adavanced option and set username and password(password should be your app code) set <code>USE SSL</code> with Port <code>465</code></p>
 <div class="imageblock">
 <div class="content">
-<img src="/home/kprasad/kpworkspace/kp_14012019/documentation/src/asciidoc/images/extended_email_1.png" alt="extended email 1">
+<img src="/home/kprasad/kpworkspace/kp_01072019/documents/src/asciidoc/images/extended_email_1.png" alt="extended email 1">
 </div>
 </div>
 </li>
@@ -1021,7 +1028,7 @@ If your <code>/etc/init.d/jenkins</code> file fails to start Jenkins, edit the <
 <p>Goto E-mail Notification section. Fill details as shown in below screenshot with your email address.  SMTP Server is <code>smtp.gmail.com</code>, select adavanced option and set username and password(password should be your app code) set <code>USE SSL</code> with Port <code>465</code></p>
 <div class="imageblock">
 <div class="content">
-<img src="/home/kprasad/kpworkspace/kp_14012019/documentation/src/asciidoc/images/email_notification_1.png" alt="email notification 1">
+<img src="/home/kprasad/kpworkspace/kp_01072019/documents/src/asciidoc/images/email_notification_1.png" alt="email notification 1">
 </div>
 </div>
 </li>
@@ -1038,6 +1045,7 @@ If your <code>/etc/init.d/jenkins</code> file fails to start Jenkins, edit the <
 </td>
 </tr>
 </table>
+</div>
 </div>
 </div>
 </div>
@@ -2120,7 +2128,7 @@ Job might fail while running stage build images with error message related to ve
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2019-04-08 22:05:19 +0530
+Last updated 2019-07-07 13:20:23 +0530
 </div>
 </div>
 <style>

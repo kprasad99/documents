@@ -65,7 +65,7 @@
 					<configuration>
 						<sourceDirectory>${basedir}/src/asciidoc</sourceDirectory>
 						<headerFooter>true</headerFooter>
-						<imagesDir>${basedir}/src/asciidoc/images</imagesDir>
+						<relativeBaseDir>true</relativeBaseDir>
 						<outputDirectory>${basedir}/docs</outputDirectory>
 					</configuration>
 					<dependencies>

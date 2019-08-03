@@ -1,6 +1,6 @@
 === Setup VM on vmware workstation
 
-:imagesdir: images
+ifndef::imagesdir[:imagesdir: ./images]
 
 We will install `ubuntu 18.04 server` as host VM.
 

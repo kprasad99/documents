@@ -1,4 +1,4 @@
-= Install Compose on Ubuntu 18.04
+= Install docker-compose on Ubuntu 18.04
 
 The Docker Compose binary cam be downloaded from the Compose repository release page on GitHub.
 
@@ -21,4 +21,28 @@ NOTE: To install a different version of Compose, substitute 1.24.1 with the vers
 +
 ----
 sudo chmod +x /usr/local/bin/docker-compose
+----
+
+== Install command completion
+
+== Bash autocompletion
+
+Make sure bash completion is installed.
+
+On a current Linux OS (in a non-minimal installation), bash completion should be
+available. if not execute be below command
+
+----
+$ sudo apt install bash-completion
+----
+
+== Configure compose autocompletion
+
+Place the completion script in /etc/bash_completion.d/.
+sudo curl -L
+
+----
+https://raw.githubusercontent.com/docker/compose/1.24.0/contrib/completion/bash/docker
+-compose \
+-o /etc/bash_completion.d/docker-compose
 ----

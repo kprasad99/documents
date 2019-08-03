@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="generator" content="Asciidoctor 2.0.2">
-<title>Install Compose on Ubuntu 18.04</title>
+<title>Install docker-compose on Ubuntu 18.04</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700">
 <style>
 /* Asciidoctor default stylesheet | MIT License | https://asciidoctor.org */
@@ -438,9 +438,19 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 </head>
 <body class="article">
 <div id="header">
-<h1>Install Compose on Ubuntu 18.04</h1>
+<h1>Install docker-compose on Ubuntu 18.04</h1>
+<div id="toc" class="toc">
+<div id="toctitle">Table of Contents</div>
+<ul class="sectlevel1">
+<li><a href="#_install_command_completion">Install command completion</a></li>
+<li><a href="#_bash_autocompletion">Bash autocompletion</a></li>
+<li><a href="#_configure_compose_autocompletion">Configure compose autocompletion</a></li>
+</ul>
+</div>
 </div>
 <div id="content">
+<div id="preamble">
+<div class="sectionbody">
 <div class="paragraph">
 <p>The Docker Compose binary cam be downloaded from the Compose repository release page on GitHub.</p>
 </div>
@@ -486,9 +496,50 @@ To install a different version of Compose, substitute 1.24.1 with the version of
 </ul>
 </div>
 </div>
+</div>
+<div class="sect1">
+<h2 id="_install_command_completion"><a class="anchor" href="#_install_command_completion"></a>Install command completion</h2>
+<div class="sectionbody">
+
+</div>
+</div>
+<div class="sect1">
+<h2 id="_bash_autocompletion"><a class="anchor" href="#_bash_autocompletion"></a>Bash autocompletion</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Make sure bash completion is installed.</p>
+</div>
+<div class="paragraph">
+<p>On a current Linux OS (in a non-minimal installation), bash completion should be
+available. if not execute be below command</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>$ sudo apt install bash-completion</pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_configure_compose_autocompletion"><a class="anchor" href="#_configure_compose_autocompletion"></a>Configure compose autocompletion</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Place the completion script in /etc/bash_completion.d/.
+sudo curl -L</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>https://raw.githubusercontent.com/docker/compose/1.24.0/contrib/completion/bash/docker
+-compose \
+-o /etc/bash_completion.d/docker-compose</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2019-08-03 14:11:02 +0530
+Last updated 2019-08-03 15:59:47 +0530
 </div>
 </div>
 </body>

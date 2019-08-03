@@ -38,11 +38,9 @@ $ sudo apt install bash-completion
 
 == Configure compose autocompletion
 
-Place the completion script in /etc/bash_completion.d/.
-sudo curl -L
-
+Place the completion script in `/etc/bash_completion.d/`.
 ----
-https://raw.githubusercontent.com/docker/compose/1.24.0/contrib/completion/bash/docker
+sudo curl -L https://raw.githubusercontent.com/docker/compose/1.24.0/contrib/completion/bash/docker
 -compose \
 -o /etc/bash_completion.d/docker-compose
 ----

@@ -5,7 +5,7 @@ The Docker Compose binary cam be downloaded from the Compose repository release 
 - Install following dependency packages 
 +
 ----
-$ sudo apt update && sudo apt install -y py-pip python-dev libffi-dev openssl-dev gcc libc-dev make
+$ sudo apt update && sudo apt install -y python-pip python-dev libffi-dev libssl-dev gcc libc-dev make
 ----
 
 - Run this command to download the current stable release of Docker Compose

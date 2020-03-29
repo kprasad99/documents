@@ -5,7 +5,7 @@ The Docker Compose binary cam be downloaded from the Compose repository release 
 - Install following dependency packages 
 +
 ----
-$ sudo apt update && sudo apt install -y py-pip python-dev libffi-dev openssl-dev gcc libc-dev make
+$ sudo apt update && sudo apt install -y python-pip python-dev libffi-dev libssl-dev gcc libc-dev make
 ----
 
 - Run this command to download the current stable release of Docker Compose
@@ -40,7 +40,6 @@ $ sudo apt install bash-completion
 
 Place the completion script in `/etc/bash_completion.d/`.
 ----
-sudo curl -L https://raw.githubusercontent.com/docker/compose/1.24.0/contrib/completion/bash/docker
--compose \
--o /etc/bash_completion.d/docker-compose
+sudo curl -L https://raw.githubusercontent.com/docker/compose/1.24.0/contrib/completion/bash/docker-compose \
+    -o /etc/bash_completion.d/docker-compose
 ----

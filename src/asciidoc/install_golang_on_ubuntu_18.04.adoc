@@ -1,0 +1,30 @@
+= Install Golng in Ubuntu 18.04
+
+Below are the steps to install golang in ubuntu 18.04 from tar file.
+
+* Download latest go distribution from go download URL(https://golang.org/dl/[from here] ).
++
+[source%autofit,bash]
+----
+$ wget https://dl.google.com/go/go1.14.1.linux-amd64.tar.gz
+----
+* Extract distribution.
++
+[source,bash]
+----
+$ tar -xzvf go1.14.1.linux-amd64.tar.gz
+----
+
+* Move the directory to `/user/local/lib`
++
+[source,bash]
+----
+$  sudo mv go /usr/local/lib/
+----
+
+* Update `mvn` alternatives.
++
+[source%autofit,bash]
+----
+$ sudo update-alternatives --install /usr/bin/go go /usr/local/lib/go/bin/go 1001
+----

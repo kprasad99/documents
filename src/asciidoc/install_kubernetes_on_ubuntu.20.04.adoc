@@ -697,7 +697,7 @@ kubectl get svc -n kube-system
 
 == Validation.
 
-You can deploy a sample angular application uploaded https://github.com/kprasad99/k8s-angular-example)[here]
+You can deploy a sample angular application uploaded https://github.com/kprasad99/k8s-angular-example[here]
 
 == Troubleshoot.
 

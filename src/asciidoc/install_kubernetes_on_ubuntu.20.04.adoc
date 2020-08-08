@@ -281,7 +281,7 @@ EOF
 . update ipvsadm configuration
 +
 ----
-cat <<EOF> | sudo tee  /etc/default/ipvsadm
+cat <<EOF | sudo tee  /etc/default/ipvsadm
 # ipvsadm
 
 # if you want to start ipvsadm on boot set this to true

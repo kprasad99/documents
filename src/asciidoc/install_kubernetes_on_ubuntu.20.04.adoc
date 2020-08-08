@@ -253,6 +253,7 @@ $ sudo sed -i '/swap/s/^\(.*\)$/#\1/g' /etc/fstab
 ----
 cat <<EOF | sudo tee /etc/docker/daemon.json
 {
+  "exec-opts": ["native.cgroupdriver=systemd"],
   "log-driver": "json-file",
   "log-opts": {
     "max-size": "100m"
@@ -288,10 +289,10 @@ cat <<EOF | sudo tee  /etc/default/ipvsadm
 AUTO="true"
 
 # daemon method (none|master|backup)
-DAEMON="none"
+DAEMON="master"
 
 # use interface (eth0,eth1...)
-IFACE="enp0s8"
+IFACE="enp0s3"
 
 # syncid to use
 # (0 means no filtering of syncids happen, that is the default)
@@ -307,6 +308,20 @@ NOTE: Change the network interface accordingly
 sudo sysctl --system
 ----
 
+. Load modules
++
+----
+sudo modprobe -- ip_vs
+sudo modprobe -- ip_vs_rr
+sudo modprobe -- ip_vs_wrr
+sudo modprobe -- ip_vs_sh
+sudo modprobe -- ip_vs_sed
+sudo modprobe -- ip_vs_lblc
+
+sudo lsmod | grep -e ip_vs -e  nf_conntrack
+
+----
+
 . Reload configuration and restart `docker` and `kubelet` service.
 +
 [sh]
@@ -314,6 +329,7 @@ sudo sysctl --system
 sudo systemctl daemon-reload
 sudo systemctl restart docker
 sudo systemctl restart kubelet
+sudo systemctl restart ipvsadm
 ```
 //end::prepareServer[]
 . **(Optional)**Reboot VMs.
@@ -324,7 +340,7 @@ sudo systemctl restart kubelet
 +
 [source%autofit, yaml,options="nowrap"]
 ----
-$ cat <<EOF  | tee kube-config.yaml
+$ cat <<EOF  | tee kubeadm-config.yaml
 apiVersion: kubeadm.k8s.io/v1beta2
 bootstrapTokens:
 - groups:
@@ -358,6 +374,9 @@ networking:
   serviceSubnet: 10.96.0.0/12
   podSubnet: 10.244.0.0/16
 scheduler: {}
+FeatureGates:
+  ServiceTopology: true
+  TopologyManager: true
 ---
 apiVersion: kubeproxy.config.k8s.io/v1alpha1
 bindAddress: 0.0.0.0
@@ -396,7 +415,7 @@ $ sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
 $ sudo chown $(id -u):$(id -g) $HOME/.kube/config
 ----	
 
-. Note down (copy to textpad) the `kubeadm` join command which needs to be executed on worker nodes to join to the cluster.
+. Note down (copy to notepad) the `kubeadm` join command which needs to be executed on worker nodes to join to the cluster.
 
 . Install pod network.
 +
@@ -754,3 +773,5 @@ https://github.com/helm/charts/tree/master/stable/nginx-ingress - nginx
 https://kubernetes.io/docs/concepts/services-networking/ingress/ - ingress controller
 
 https://metallb.universe.tf - metallb
+
+https://github.com/kubernetes/kubernetes/tree/master/pkg/proxy/ipvs - ipvs

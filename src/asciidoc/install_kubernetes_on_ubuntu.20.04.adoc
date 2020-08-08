@@ -702,6 +702,13 @@ $ helm install metrics-server stable/metrics-server \
 $ kubectl top nodes
 ----
 
+. Alternatively instead of using helm, download latest released component.yaml from metrics-server link:https://github.com/kubernetes-sigs/metrics-server/releases/[github release page] and then add following two args to metrics-server container[in args section after below secure-port=4443]. and finally install using `kubectl apply -f component.yaml'
++
+----
+- --kubelet-insecure-tls
+- --kubelet-preferred-address-types=InternalIP,Hostname,InternalDNS,ExternalDNS,ExternalIP
+----
+
 === Installing Traefik Ingress Controller.
 . Add traefik repository
 +
@@ -748,6 +755,12 @@ data:
       - 192.168.56.240-192.168.56.250
 EOF
 ----
+
+. Apply the configuration
++
+----
+kubectl apply -f metallb-l2-config.yaml
+----
 . Now if you can list service and notice that `external ip` field has ip address set from above pool. This can be noticed for traefik service.
 +
 ----
@@ -764,6 +777,8 @@ https://kubernetes.io/docs/tasks/administer-cluster/dns-debugging-resolution/ - 
 
 https://kubernetes.io/docs/setup/independent/troubleshooting-kubeadm/ - kubeadm
 
+https://github.com/kubernetes/kubernetes/tree/master/pkg/proxy/ipvs - ipvs
+
 ==== References
 
 https://github.com/helm/charts/tree/master/stable/traefik - traefik
@@ -774,4 +789,3 @@ https://kubernetes.io/docs/concepts/services-networking/ingress/ - ingress contr
 
 https://metallb.universe.tf - metallb
 
-https://github.com/kubernetes/kubernetes/tree/master/pkg/proxy/ipvs - ipvs

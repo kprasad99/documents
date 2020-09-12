@@ -247,6 +247,14 @@ $ sudo swapoff -a
 $ sudo sed -i '/swap/s/^\(.*\)$/#\1/g' /etc/fstab
 ----
 
+. Add private ip to kubelet. Create file /etc/default/kubelet and following content in the file.
++
+----
+KUBELET_EXTRA_ARGS=--node-ip=192.168.56.10
+----
++
+NOTE: Change ip address as per master and worker node ips
+
 . Configure docker `daemon.json`.
 +
 [json]

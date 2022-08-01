@@ -455,12 +455,15 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <ul class="sectlevel2">
 <li><a href="#_prepare_server">Prepare server</a></li>
 <li><a href="#_configure_master_vm">Configure Master VM.</a></li>
-<li><a href="#_configure_kubernetes_dashboad">Configure Kubernetes Dashboad.</a></li>
-<li><a href="#_configuration_slave_node">Configuration slave node.</a></li>
-<li><a href="#_install_helm">Install Helm</a></li>
-<li><a href="#_install_ingress_controller">Install Ingress controller</a></li>
+<li><a href="#_joining_worker_node_to_cluster">Joining worker node to cluster.</a></li>
+<li><a href="#_install_helm_v3">Install Helm v3</a></li>
+<li><a href="#_configure_kubernetes_dashboad_v2">Configure Kubernetes Dashboad (v2).</a></li>
+<li><a href="#_installing_metrics_server">Installing Metrics server.</a></li>
+<li><a href="#_installing_traefik_ingress_controller">Installing Traefik Ingress Controller.</a></li>
+<li><a href="#_installing_metallb">Installing MetalLB.</a></li>
 </ul>
 </li>
+<li><a href="#_validation">Validation.</a></li>
 <li><a href="#_troubleshoot">Troubleshoot.</a>
 <ul class="sectlevel3">
 <li><a href="#_references">References</a></li>
@@ -481,7 +484,7 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <h2 id="_virtualbox_setup"><a class="anchor" href="#_virtualbox_setup"></a>VirtualBox setup</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>Create two VMs k8s-master and k8s-s1 as shown in below diagram.</p>
+<p>Create two VMs k8s-master and k8s-worker as shown in below diagram.</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -594,6 +597,33 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <p>Modify VM network, with Adapter 1 for Host Only Network and Adapter 2 for NAT.</p>
 </li>
 <li>
+<p>Enable Nested Virtualization</p>
+<div class="listingblock">
+<div class="content">
+<pre>$ VBoxManage modifyvm &lt;vm-name&gt; --nested-hw-virt on</pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Example</div>
+<div class="content">
+<pre>$ VBoxManage modifyvm k8s-master --nested-hw-virt on
+$ VBoxManage modifyvm k8s-qoekwe --nested-hw-virt on</pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Nested Virtualization is supported for Intel i7 7Gen+ processors
+</td>
+</tr>
+</table>
+</div>
+</li>
+<li>
 <p>Start VM.</p>
 </li>
 <li>
@@ -607,7 +637,7 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <li>
 <p>Setup static network.</p>
 <div class="paragraph">
-<p>Open file <code>/etc/netplan/50-cloud-init.yaml</code> and add below configuration.</p>
+<p>Open file <code>/etc/netplan/00-installer-config.yaml</code> and add below configuration.</p>
 </div>
 <div class="listingblock">
 <div class="title"><strong>k8s-master</strong></div>
@@ -624,7 +654,7 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 </div>
 </div>
 <div class="listingblock">
-<div class="title"><strong>k8s-s1</strong></div>
+<div class="title"><strong>k8s-worker</strong></div>
 <div class="content">
 <pre class="highlight"><code class="language-yaml" data-lang="yaml">network:
  ethernets:
@@ -644,14 +674,14 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <div class="title">example(master)</div>
 <div class="content">
 <pre>192.168.56.10 k8s-master
-192.168.56.12 k8s-s1</pre>
+192.168.56.12 k8s-worker</pre>
 </div>
 </div>
 <div class="listingblock">
-<div class="title">example(slave)</div>
+<div class="title">example(worker)</div>
 <div class="content">
 <pre>192.168.56.10 k8s-master
-192.168.56.12 k8s-s1</pre>
+192.168.56.12 k8s-worker</pre>
 </div>
 </div>
 <div class="admonitionblock note">
@@ -661,7 +691,7 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <i class="fa icon-note" title="Note"></i>
 </td>
 <td class="content">
-This step is required since we&#8217;ve chosen host-only adapter and our default route is provider by NAT
+This step is required since we&#8217;ve chosen host-only adapter and our default route is provided by NAT
 network, if we choose Bridge network this step can be skipped.
 </td>
 </tr>
@@ -709,7 +739,12 @@ network, if we choose Bridge network this step can be skipped.
 <p>Install utility packages</p>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight nowrap"><code class="language-shell" data-lang="shell">$ sudo apt install apt-transport-https ca-certificates curl software-properties-common</code></pre>
+<pre class="highlight nowrap"><code class="language-shell" data-lang="shell">$ apt-get install -y \
+    apt-transport-https \
+    ca-certificates \
+    curl \
+    gnupg-agent \
+    software-properties-common</code></pre>
 </div>
 </div>
 </li>
@@ -725,7 +760,10 @@ network, if we choose Bridge network this step can be skipped.
 <p>Add docker repository to apt sources.</p>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight nowrap"><code class="language-shell" data-lang="shell">$ sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu bionic stable"</code></pre>
+<pre class="highlight nowrap"><code class="language-shell" data-lang="shell">$ sudo add-apt-repository \
+   "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
+   $(lsb_release -cs) \
+   stable"</code></pre>
 </div>
 </div>
 </li>
@@ -733,7 +771,7 @@ network, if we choose Bridge network this step can be skipped.
 <p>Update apt sources and install docker</p>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight nowrap"><code class="language-shell" data-lang="shell">$ sudo apt update ; sudo apt install docker-ce</code></pre>
+<pre class="highlight nowrap"><code class="language-shell" data-lang="shell">$ sudo apt update ; sudo apt install -y docker-ce docker-ce-cli containerd.io</code></pre>
 </div>
 </div>
 </li>
@@ -760,6 +798,38 @@ network, if we choose Bridge network this step can be skipped.
 </div>
 <div class="olist arabic">
 <ol class="arabic">
+<li>
+<p>Letting iptables see bridged traffic</p>
+<div class="listingblock">
+<div class="content">
+<pre>cat &lt;&lt;EOF | sudo tee /etc/sysctl.d/98-kubernetes-cni.conf
+net.bridge.bridge-nf-call-ip6tables = 1
+net.bridge.bridge-nf-call-iptables = 1
+EOF</pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Make sure that the br_netfilter module is loaded before this step. This can be done by running lsmod | grep br_netfilter.
+To load it explicitly call sudo modprobe br_netfilter.
+</td>
+</tr>
+</table>
+</div>
+</li>
+<li>
+<p>Reload configuration</p>
+<div class="listingblock">
+<div class="content">
+<pre>sudo sysctl --system</pre>
+</div>
+</div>
+</li>
 <li>
 <p>Add Kubernetes source gpg.</p>
 <div class="listingblock">
@@ -789,10 +859,18 @@ Browse <a href="http://apt.kubernetes.io/" class="bare">http://apt.kubernetes.io
 </div>
 </li>
 <li>
-<p>Install <code>kubeadm</code></p>
+<p>Install <code>kuberenetes</code> packages</p>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight nowrap"><code class="language-shell" data-lang="shell">$ sudo apt update; sudo apt install kubeadm kubelet kubectl</code></pre>
+<pre class="highlight nowrap"><code class="language-shell" data-lang="shell">$ sudo apt update; sudo apt install -y kubeadm kubelet kubectl</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Prevent automatic update of pages</p>
+<div class="listingblock">
+<div class="content">
+<pre>$ sudo apt-mark hold kubelet kubeadm kubectl</pre>
 </div>
 </div>
 </li>
@@ -811,60 +889,136 @@ Browse <a href="http://apt.kubernetes.io/" class="bare">http://apt.kubernetes.io
 <pre>$ sudo sed -i '/swap/s/^\(.*\)$/#\1/g' /etc/fstab</pre>
 </div>
 </div>
-<div class="admonitionblock important">
+</li>
+<li>
+<p>Add private ip to kubelet. Create file /etc/default/kubelet and following content in the file.</p>
+<div class="listingblock">
+<div class="content">
+<pre>KUBELET_EXTRA_ARGS=--node-ip=192.168.56.10</pre>
+</div>
+</div>
+<div class="admonitionblock note">
 <table>
 <tr>
 <td class="icon">
-<i class="fa icon-important" title="Important"></i>
+<i class="fa icon-note" title="Note"></i>
 </td>
 <td class="content">
-If 4 and 5 steps not followed, kubelet service will not start.
+Change ip address as per master and worker node ips
 </td>
 </tr>
 </table>
 </div>
 </li>
 <li>
-<p>Add private ip to kubernetes arguments</p>
-<div class="paragraph">
-<p>While installing <code>kubeadm</code> you might get error related to port forwarding if you are using private IP which is true in our case. To resolve this issue,
-Create file <code>/etc/default/kubelet</code> and following content in the file.</p>
-</div>
+<p>Configure docker <code>daemon.json</code>.</p>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code>KUBELET_EXTRA_ARGS=--node-ip=192.168.56.10</code></pre>
-</div>
-</div>
-</li>
-<li>
-<p>Use systemd for cgroups.</p>
-<div class="paragraph">
-<p>Create file <code>/etc/docker/daemon.json</code> and add following content.</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code>{
+<pre>cat &lt;&lt;EOF | sudo tee /etc/docker/daemon.json
+{
   "exec-opts": ["native.cgroupdriver=systemd"],
   "log-driver": "json-file",
   "log-opts": {
     "max-size": "100m"
   },
   "storage-driver": "overlay2"
-}</code></pre>
+}
+EOF</pre>
 </div>
 </div>
 </li>
 <li>
-<p>Reload configuration and restart docker service.</p>
+<p>Install ipvs, we shall be using ipvs for LB.</p>
+<div class="listingblock">
+<div class="content">
+<pre>sudo apt install -y ipvsadm</pre>
+</div>
+</div>
+</li>
+<li>
+<p>configure ipvsadm</p>
+<div class="listingblock">
+<div class="content">
+<pre>cat &lt;&lt;EOF | sudo tee /etc/sysctl.d/98-ipvsadm.conf
+net.ipv4.ip_forward=1
+
+net.ipv4.conf.all.arp_ignore=1
+net.ipv4.conf.all.arp_announce=2
+EOF</pre>
+</div>
+</div>
+</li>
+<li>
+<p>update ipvsadm configuration</p>
+<div class="listingblock">
+<div class="content">
+<pre>cat &lt;&lt;EOF | sudo tee  /etc/default/ipvsadm
+# ipvsadm
+
+# if you want to start ipvsadm on boot set this to true
+AUTO="true"
+
+# daemon method (none|master|backup)
+DAEMON="master"
+
+# use interface (eth0,eth1...)
+IFACE="enp0s3"
+
+# syncid to use
+# (0 means no filtering of syncids happen, that is the default)
+# SYNCID="0"
+EOF</pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+Change the network interface accordingly
+</td>
+</tr>
+</table>
+</div>
+</li>
+<li>
+<p>Reload configuration</p>
+<div class="listingblock">
+<div class="content">
+<pre>sudo sysctl --system</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Load modules</p>
+<div class="listingblock">
+<div class="content">
+<pre>sudo modprobe -- ip_vs
+sudo modprobe -- ip_vs_rr
+sudo modprobe -- ip_vs_wrr
+sudo modprobe -- ip_vs_sh
+sudo modprobe -- ip_vs_sed
+sudo modprobe -- ip_vs_lblc
+
+sudo lsmod | grep -e ip_vs -e  nf_conntrack</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Reload configuration and restart <code>docker</code> and <code>kubelet</code> service.</p>
 <div class="listingblock">
 <div class="content">
 <pre class="highlight"><code>sudo systemctl daemon-reload
-sudo systemctl restart docker</code></pre>
+sudo systemctl restart docker
+sudo systemctl restart kubelet
+sudo systemctl restart ipvsadm</code></pre>
 </div>
 </div>
 </li>
 <li>
-<p>Reboot VMs.</p>
+<p><strong>(Optional)</strong>Reboot VMs.</p>
 </li>
 </ol>
 </div>
@@ -874,26 +1028,97 @@ sudo systemctl restart docker</code></pre>
 <div class="olist arabic">
 <ol class="arabic">
 <li>
-<p>Initialize kubernetes master node by executing below command.</p>
+<p>Create <code>kubeadm-config.yaml</code> file that consists of cluster configuration.</p>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight nowrap"><code class="language-shell" data-lang="shell">$ kubeadm init --apiserver-advertise-address=192.168.56.9 \
-   --apiserver-cert-extra-sans=192.168.56.9  \
-   --pod-network-cidr=10.244.0.0/16 -v 1</code></pre>
+<pre class="highlight nowrap"><code class="language-yaml" data-lang="yaml">$ cat &lt;&lt;EOF  | tee kubeadm-config.yaml
+apiVersion: kubeadm.k8s.io/v1beta2
+bootstrapTokens:
+- groups:
+  - system:bootstrappers:kubeadm:default-node-token
+  ttl: 24h0m0s
+  usages:
+  - signing
+  - authentication
+kind: InitConfiguration
+localAPIEndpoint:
+  advertiseAddress: 192.168.56.10
+  bindPort: 6443
+---
+apiServer:
+  timeoutForControlPlane: 4m0s
+apiVersion: kubeadm.k8s.io/v1beta2
+certificatesDir: /etc/kubernetes/pki
+clusterName: kubernetes
+#controlPlaneEndpoint: 192.168.1.6:6443
+controllerManager: {}
+dns:
+  type: CoreDNS
+etcd:
+  local:
+    dataDir: /var/lib/etcd
+imageRepository: k8s.gcr.io
+kind: ClusterConfiguration
+#kubernetesVersion: v1.18.0
+networking:
+  dnsDomain: cluster.local
+  serviceSubnet: 10.96.0.0/12
+  podSubnet: 10.244.0.0/16
+scheduler: {}
+FeatureGates:
+  ServiceTopology: true
+  TopologyManager: true
+---
+apiVersion: kubeproxy.config.k8s.io/v1alpha1
+bindAddress: 0.0.0.0
+ipvs:
+  scheduler: "lblc"
+  strictARP: true
+kind: KubeProxyConfiguration
+mode: "ipvs"
+
+EOF</code></pre>
 </div>
 </div>
-<div class="admonitionblock warning">
+<div class="admonitionblock important">
 <table>
 <tr>
 <td class="icon">
-<i class="fa icon-warning" title="Warning"></i>
+<i class="fa icon-important" title="Important"></i>
 </td>
 <td class="content">
-If decide to change pod network remember to change the pod network in <code>flannel.yaml</code>
+If decide to change pod network, remember to change the pod network in <code>flannel.yaml</code>
 while setting up pod network in below step.
 </td>
 </tr>
 </table>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>You can geneate the above configuration file using below command</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>$  sudo kubeadm config print init-defaults  --component-configs KubeProxyConfiguration</pre>
+</div>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</li>
+<li>
+<p>Bring up cluster now.</p>
+<div class="listingblock">
+<div class="content">
+<pre>$ sudo kubeadm init --config kubeadm-config.yaml</pre>
+</div>
 </div>
 </li>
 <li>
@@ -908,7 +1133,7 @@ $ sudo chown $(id -u):$(id -g) $HOME/.kube/config</code></pre>
 </div>
 </li>
 <li>
-<p>Note down (copy to textpad) the <code>kubeadm</code> join command which needs to be executed on slave nodes to join to the cluster, we not run the command now, instead we will execute once dashboard is installed as we need dashboard to be installed on master node.</p>
+<p>Note down (copy to notepad) the <code>kubeadm</code> join command which needs to be executed on worker nodes to join to the cluster.</p>
 </li>
 <li>
 <p>Install pod network.</p>
@@ -970,7 +1195,7 @@ which chosen pod network above in <code>net-conf.json</code> section.</p>
 <p>Now Create pod netwrok by applying updated yaml file</p>
 <div class="listingblock">
 <div class="content">
-<pre>$ kubectl apply -f kube-flannel.yaml</pre>
+<pre>$ kubectl apply -f kube-flannel.yml</pre>
 </div>
 </div>
 </li>
@@ -981,7 +1206,7 @@ which chosen pod network above in <code>net-conf.json</code> section.</p>
 <p>Verify all necessary pods are started</p>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight nowrap"><code class="language-shell" data-lang="shell">$ kubectl get pods --all-namespaces</code></pre>
+<pre class="highlight nowrap"><code class="language-shell" data-lang="shell">$ kubectl get pods -A</code></pre>
 </div>
 </div>
 <div class="listingblock">
@@ -999,28 +1224,162 @@ kube-system   kube-scheduler-k8s-master            1/1     Running   0          
 </div>
 </div>
 </li>
+<li>
+<p>We can check if master node is ready or not by executing below command.</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-sh" data-lang="sh">$ kubectl get nodes</code></pre>
+</div>
+</div>
+</li>
 </ol>
 </div>
 </div>
 <div class="sect2">
-<h3 id="_configure_kubernetes_dashboad"><a class="anchor" href="#_configure_kubernetes_dashboad"></a>Configure Kubernetes Dashboad.</h3>
+<h3 id="_joining_worker_node_to_cluster"><a class="anchor" href="#_joining_worker_node_to_cluster"></a>Joining worker node to cluster.</h3>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Now go to worker node and execute the join command previously saved when you were executing kubeadm on master.</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code class="language-shell" data-lang="shell">$  sudo kubeadm join 192.168.56.10:6443 --token t0j1zi.v5lojsnpjh9r0rbn \
+       --discovery-token-ca-cert-hash sha256:40b1142d9002003ab5b085776b8b8cba4a41ceaafab06429c49eaedc2b2939fa</code></pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+The above command is sample, the values are dynamically generated.
+</td>
+</tr>
+</table>
+</div>
+</li>
+<li>
+<p>Now go back to master and execute the below command, you should be able to see slave node added.</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code class="language-shell" data-lang="shell">$ kubectl get nodes</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">output:</div>
+<div class="content">
+<pre class="highlight nowrap"><code class="language-shell" data-lang="shell">NAME             STATUS   ROLES    AGE     VERSION
+k8s-master       Ready    master   56m     v1.18.4
+k8s-worker       Ready    &lt;none&gt;   2m49s   v1.18.4</code></pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_install_helm_v3"><a class="anchor" href="#_install_helm_v3"></a>Install Helm v3</h3>
+<div class="paragraph">
+<p>Helm package manager consists of helm client [ Helm v3 deprecated need for server side component(tiller) which was running as pod on k8s]. We will install helm client on our master server itself.</p>
+</div>
+<div class="sect3">
+<h4 id="_install_helm_client"><a class="anchor" href="#_install_helm_client"></a>Install helm client.</h4>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Install helm client using script on master server using below set of commands.</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-sh" data-lang="sh">$ curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3
+$ chmod 700 get_helm.sh
+$ ./get_helm.sh</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Verify Helm is running</p>
+<div class="listingblock">
+<div class="content">
+<pre>$ helm list</pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">output</div>
+<div class="content">
+<pre>NAME    NAMESPACE       REVISION        UPDATED STATUS  CHART   APP VERSION</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_configure_kubernetes_dashboad_v2"><a class="anchor" href="#_configure_kubernetes_dashboad_v2"></a>Configure Kubernetes Dashboad (v2).</h3>
 <div class="sect3">
 <h4 id="_install_dashboard"><a class="anchor" href="#_install_dashboard"></a>Install Dashboard</h4>
 <div class="olist arabic">
 <ol class="arabic">
 <li>
-<p>Deploy dashboard.</p>
+<p>Add dashboard repository.</p>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight nowrap"><code class="language-shell" data-lang="shell">$ kubectl create -f https://raw.githubusercontent.com/kubernetes/dashboard/master/aio/deploy/recommended/kubernetes-dashboard.yaml</code></pre>
+<pre class="highlight nowrap"><code class="language-shell" data-lang="shell">$ helm repo add kubernetes-dashboard https://kubernetes.github.io/dashboard/</code></pre>
 </div>
+</div>
+</li>
+<li>
+<p>Update dashboard repository.</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code class="language-shell" data-lang="shell">$ helm repo update</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Install dashboard.</p>
+<div class="listingblock">
+<div class="content">
+<pre>helm install kubernetes-dashboard \
+   kubernetes-dashboard/kubernetes-dashboard \
+   --namespace kube-system \
+   --set fullnameOverride=kubernetes-dashboard \
+   --set serviceAccount.name=admin-user \
+   --set metricsScraper.enabled=true \
+   --set service.type=NodePort</pre>
+</div>
+</div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-note" title="Note"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>By default dashboard is not recommanded to be accessed from outside the VM, if you are using ubuntu desktop you can run below command and
+access the dashboard using proxy at url  <code><a href="http://localhost:8001/api/v1/namespaces/kube-system/services/https:kubernetes-dashboard:/proxy/" class="bare">http://localhost:8001/api/v1/namespaces/kube-system/services/https:kubernetes-dashboard:/proxy/</a></code> however we will be choosing <code>NodePort</code> to access dashboard using host vm&#8217;s IP as we set <code>service.type=NodePort</code>.</p>
+</div>
+<div class="paragraph">
+<p>+</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight nowrap"><code class="language-shell" data-lang="shell">$ kubectl proxy</code></pre>
+</div>
+</div>
+</td>
+</tr>
+</table>
 </div>
 </li>
 <li>
 <p>Wait till dashboard pod is running.</p>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight nowrap"><code class="language-shell" data-lang="shell">$ kubectl get pods --all-namespaces</code></pre>
+<pre class="highlight nowrap"><code class="language-shell" data-lang="shell">$ kubectl get pods -n kube-system -w</code></pre>
 </div>
 </div>
 <div class="listingblock">
@@ -1040,68 +1399,7 @@ kube-system   kubernetes-dashboard-57df4db6b-5phx2   1/1     Running   0        
 </div>
 </li>
 <li>
-<p>By default dashboard cannot be accessed from outside the VM, if you are using ubuntu desktop you can run below command and
-access the dashboard using proxy at url  <code><a href="http://localhost:8001/api/v1/namespaces/kube-system/services/https:kubernetes-dashboard:/proxy/" class="bare">http://localhost:8001/api/v1/namespaces/kube-system/services/https:kubernetes-dashboard:/proxy/</a></code></p>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight nowrap"><code class="language-shell" data-lang="shell">$ kubectl proxy</code></pre>
-</div>
-</div>
-<div class="olist loweralpha">
-<ol class="loweralpha" type="a">
-<li>
-<p>However if you want dashboard be accessed from external ip editing kubernetes-dashboard service and changing type from ClusterIP to NodePort.</p>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight nowrap"><code class="language-shell" data-lang="shell">$ kubectl edit service kubernetes-dashboard -n kube-system</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>The file content should something as shown below</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code class="language-yaml" data-lang="yaml">apiVersion: v1
-kind: Service
-metadata:
-  creationTimestamp: "2019-01-21T18:06:35Z"
-  labels:
-    k8s-app: kubernetes-dashboard
-  name: kubernetes-dashboard
-  namespace: kube-system
-  resourceVersion: "1885"
-  selfLink: /api/v1/namespaces/kube-system/services/kubernetes-dashboard
-  uid: 4a2d8f61-1da7-11e9-9d52-080027aba7cb
-spec:
-  clusterIP: 10.110.253.116
-  externalTrafficPolicy: Cluster
-  ports:
-  - nodePort: 32608
-    port: 443
-    protocol: TCP
-    targetPort: 8443
-  selector:
-    k8s-app: kubernetes-dashboard
-  sessionAffinity: None
-  type: ClusterIP <i class="conum" data-value="1"></i><b>(1)</b>
-status:
-  loadBalancer: {}</code></pre>
-</div>
-</div>
-<div class="colist arabic">
-<table>
-<tr>
-<td><i class="conum" data-value="1"></i><b>1</b></td>
-<td>Replace <strong>ClusterIP</strong> with <strong>NodePort</strong></td>
-</tr>
-</table>
-</div>
-</li>
-</ol>
-</div>
-</li>
-<li>
-<p>Execute the below command and note down the port</p>
+<p>Execute the below command and note down the port on which dashboard can be accessed</p>
 <div class="listingblock">
 <div class="content">
 <pre class="highlight nowrap"><code class="language-shell" data-lang="shell">$ kubectl get service --all-namespaces</code></pre>
@@ -1144,36 +1442,14 @@ Port will be dynamically generated and port should be replaced from step 5.
 </table>
 </div>
 </li>
-</ol>
-</div>
-</div>
-<div class="sect3">
-<h4 id="_create_service_account_and_access_dashboard"><a class="anchor" href="#_create_service_account_and_access_dashboard"></a>Create service Account and access dashboard.</h4>
-<div class="olist arabic">
-<ol class="arabic">
 <li>
-<p>Create a service account</p>
+<p>Add admin-user to cluster role by editing <code>kubectl edit clusterrolebinding cluster-admin -n kube-system</code> and
+add code snippet to subjects section.</p>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight nowrap"><code class="language-shell" data-lang="shell">$ kubectl create serviceaccount admin-user -n kube-system</code></pre>
-</div>
-</div>
-<div class="paragraph">
-<p>Verification : Below command should list the  admin-user account</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight nowrap"><code class="language-shell" data-lang="shell">$ kubectl get serviceaccount --all-namespaces</code></pre>
-</div>
-</div>
-</li>
-<li>
-<p>Create Cluster Role binding for the user.</p>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight nowrap"><code class="language-sh" data-lang="sh">$  kubectl create clusterrolebinding admin-user -n kube-system \
-     --clusterrole=cluster-admin \
-     --serviceaccount=kube-system:admin-user</code></pre>
+<pre>- kind: ServiceAccount
+  name: admin-user
+  namespace: kubernetes-dashboard</pre>
 </div>
 </div>
 </li>
@@ -1207,23 +1483,6 @@ token:      eyJhbGciOiJSUzI1NiIsImtpZCI6IiJ9.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2V
 <div class="paragraph">
 <p>Copy the token and paste it into token field in the URL to Dashboard and login to dashboard.</p>
 </div>
-</li>
-</ol>
-</div>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_configuration_slave_node"><a class="anchor" href="#_configuration_slave_node"></a>Configuration slave node.</h3>
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p>Now go to slave node and execute the join command previously saved when you were executing kubeadm on master.</p>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight nowrap"><code class="language-shell" data-lang="shell">$  kubeadm join 192.168.56.10:6443 --token t0j1zi.v5lojsnpjh9r0rbn \
-       --discovery-token-ca-cert-hash sha256:40b1142d9002003ab5b085776b8b8cba4a41ceaafab06429c49eaedc2b2939fa</code></pre>
-</div>
-</div>
 <div class="admonitionblock note">
 <table>
 <tr>
@@ -1231,25 +1490,60 @@ token:      eyJhbGciOiJSUzI1NiIsImtpZCI6IiJ9.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2V
 <i class="fa icon-note" title="Note"></i>
 </td>
 <td class="content">
-The above command is sample, the values are dynamically generated.
+Due to security prevention UI can be accessed only via <code>FireFox</code>.
 </td>
 </tr>
 </table>
 </div>
 </li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_installing_metrics_server"><a class="anchor" href="#_installing_metrics_server"></a>Installing Metrics server.</h3>
+<div class="olist arabic">
+<ol class="arabic">
 <li>
-<p>Now go back to master and execute the below command, you should be able to see slave node added.</p>
+<p>Add stable repository</p>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight nowrap"><code class="language-shell" data-lang="shell">$ kubectl get nodes</code></pre>
+<pre>$ helm repo add stable https://kubernetes-charts.storage.googleapis.com</pre>
 </div>
 </div>
+</li>
+<li>
+<p>Update helm repository</p>
 <div class="listingblock">
-<div class="title">output:</div>
 <div class="content">
-<pre class="highlight nowrap"><code class="language-shell" data-lang="shell">NAME         STATUS   ROLES    AGE     VERSION
-k8s-master   Ready    master   56m     v1.13.2
-k8s-s1       Ready    &lt;none&gt;   2m49s   v1.13.2</code></pre>
+<pre>$ helm repo update</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Execute below helm command to install metrics server.</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>$ helm install metrics-server stable/metrics-server \
+     --namespace kube-system \
+     --set args="{--logtostderr,--kubelet-insecure-tls,--kubelet-preferred-address-types=InternalIP,Hostname,InternalDNS,ExternalDNS,ExternalIP}"</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Wait for pod to come up after that you can execute top command to get resource usage.</p>
+<div class="listingblock">
+<div class="content">
+<pre>$ kubectl top nodes</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Alternatively instead of using helm, download latest released component.yaml from metrics-server <a href="https://github.com/kubernetes-sigs/metrics-server/releases/">github release page</a> and then add following two args to metrics-server container[in args section after below secure-port=4443]. and finally install using `kubectl apply -f component.yaml'</p>
+<div class="listingblock">
+<div class="content">
+<pre>- --kubelet-insecure-tls
+- --kubelet-preferred-address-types=InternalIP,Hostname,InternalDNS,ExternalDNS,ExternalIP</pre>
 </div>
 </div>
 </li>
@@ -1257,111 +1551,97 @@ k8s-s1       Ready    &lt;none&gt;   2m49s   v1.13.2</code></pre>
 </div>
 </div>
 <div class="sect2">
-<h3 id="_install_helm"><a class="anchor" href="#_install_helm"></a>Install Helm</h3>
-<div class="paragraph">
-<p>Helm package manager consists of helm client and tiller component which runs as pod on k8s. We will install helm client on our master server itself.</p>
-</div>
-<div class="sect3">
-<h4 id="_install_helm_client"><a class="anchor" href="#_install_helm_client"></a>Install helm client.</h4>
+<h3 id="_installing_traefik_ingress_controller"><a class="anchor" href="#_installing_traefik_ingress_controller"></a>Installing Traefik Ingress Controller.</h3>
 <div class="olist arabic">
 <ol class="arabic">
 <li>
-<p>Install helm client using snap on master server using below command.</p>
+<p>Add traefik repository</p>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code>$ sudo snap install helm --classic</code></pre>
+<pre>$ helm repo add traefik https://containous.github.io/traefik-helm-chart</pre>
 </div>
 </div>
 </li>
 <li>
-<p>Verify helm client is running by executing command <code>helm version</code>, it should give version details for client and for server side should return error until we install tiller.</p>
+<p>Update helm repository</p>
+<div class="listingblock">
+<div class="content">
+<pre>$ helm repo update</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Execute below helm command to install traefik.</p>
+<div class="listingblock">
+<div class="content">
+<pre>$ helm install traefik traefik/traefik --namespace kube-system</pre>
+</div>
+</div>
 </li>
 </ol>
-</div>
-</div>
-<div class="sect3">
-<h4 id="_install_tiller"><a class="anchor" href="#_install_tiller"></a>Install Tiller.</h4>
-<div class="paragraph">
-<p>Before installing tiller we need to create RBAC for the tiller pod.</p>
-</div>
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p>Create service account for tiller.</p>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code>$ kubectl create serviceaccount -n kube-system tiller</code></pre>
-</div>
-</div>
-</li>
-<li>
-<p>Provide cluster role for the above service account.</p>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code>$ kubectl create clusterrolebinding tiller-cluster-rule \
-   --clusterrole cluster-admin \
-   --serviceaccount=kube-system:tiller</code></pre>
-</div>
-</div>
-</li>
-<li>
-<p>Now create tiller using the service account</p>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code>helm init --service-account tiller</code></pre>
-</div>
-</div>
-</li>
-<li>
-<p>Wait until tiller pod comes up.</p>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code>kubectl get po --all-namespaces --watch</code></pre>
-</div>
-</div>
-</li>
-<li>
-<p>Once tiller pod is up, run <code>helm version</code>, the output provide version details for both client and server.</p>
-</li>
-</ol>
-</div>
 </div>
 </div>
 <div class="sect2">
-<h3 id="_install_ingress_controller"><a class="anchor" href="#_install_ingress_controller"></a>Install Ingress controller</h3>
+<h3 id="_installing_metallb"><a class="anchor" href="#_installing_metallb"></a>Installing MetalLB.</h3>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Execute following commands, This will deploy MetalLB to your cluster, under the metallb-system namespace</p>
+<div class="listingblock">
+<div class="content">
+<pre>$ kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.9.3/manifests/namespace.yaml
+$ kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.9.3/manifests/metallb.yaml
+$ kubectl create secret generic -n metallb-system memberlist --from-literal=secretkey="$(openssl rand -base64 128)"</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Create L2 configuration into config-map file.</p>
+<div class="listingblock">
+<div class="content">
+<pre>cat &lt;&lt;EOF | tee metallb-l2-config.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: metallb-system
+  name: config
+data:
+  config: |
+    address-pools:
+    - name: default
+      protocol: layer2
+      addresses:
+      - 192.168.56.240-192.168.56.250
+EOF</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Apply the configuration</p>
+<div class="listingblock">
+<div class="content">
+<pre>kubectl apply -f metallb-l2-config.yaml</pre>
+</div>
+</div>
+</li>
+<li>
+<p>Now if you can list service and notice that <code>external ip</code> field has ip address set from above pool. This can be noticed for traefik service.</p>
+<div class="listingblock">
+<div class="content">
+<pre>kubectl get svc -n kube-system</pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_validation"><a class="anchor" href="#_validation"></a>Validation.</h2>
+<div class="sectionbody">
 <div class="paragraph">
-<p>Optionally if you want to expose Any API/web application install ingress controllers such as NGINX, traefik etc.</p>
-</div>
-<div class="sect5">
-<h6 id="_install_traefik_ingress_controller"><a class="anchor" href="#_install_traefik_ingress_controller"></a>Install Traefik Ingress controller.</h6>
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p>Execute below helm command to install traefik ingress.</p>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code>$ helm install --name treafik-ingress --namespace kube-system  --set dashboard.enabled=true --set rbac.enabled=true stable/traefik</code></pre>
-</div>
-</div>
-</li>
-</ol>
-</div>
-</div>
-<div class="sect5">
-<h6 id="_installing_nginx_ingress_controller"><a class="anchor" href="#_installing_nginx_ingress_controller"></a>Installing NGINX ingress controller.</h6>
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p>Execute below helm command to install nginx ingress.</p>
-<div class="listingblock">
-<div class="content">
-<pre class="highlight"><code>$ helm install stable/nginx-ingress --name nginx-ingress --set rbac.create=true</code></pre>
-</div>
-</div>
-</li>
-</ol>
-</div>
-</div>
+<p>You can deploy a sample angular application uploaded <a href="https://github.com/kprasad99/k8s-angular-example">here</a></p>
 </div>
 </div>
 </div>
@@ -1374,6 +1654,9 @@ k8s-s1       Ready    &lt;none&gt;   2m49s   v1.13.2</code></pre>
 <div class="paragraph">
 <p><a href="https://kubernetes.io/docs/setup/independent/troubleshooting-kubeadm/" class="bare">https://kubernetes.io/docs/setup/independent/troubleshooting-kubeadm/</a> - kubeadm</p>
 </div>
+<div class="paragraph">
+<p><a href="https://github.com/kubernetes/kubernetes/tree/master/pkg/proxy/ipvs" class="bare">https://github.com/kubernetes/kubernetes/tree/master/pkg/proxy/ipvs</a> - ipvs</p>
+</div>
 <div class="sect3">
 <h4 id="_references"><a class="anchor" href="#_references"></a>References</h4>
 <div class="paragraph">
@@ -1383,7 +1666,10 @@ k8s-s1       Ready    &lt;none&gt;   2m49s   v1.13.2</code></pre>
 <p><a href="https://github.com/helm/charts/tree/master/stable/nginx-ingress" class="bare">https://github.com/helm/charts/tree/master/stable/nginx-ingress</a> - nginx</p>
 </div>
 <div class="paragraph">
-<p><a href="https://kubernetes.io/docs/concepts/services-networking/ingress/" class="bare">https://kubernetes.io/docs/concepts/services-networking/ingress/</a> - ingress controller concepts</p>
+<p><a href="https://kubernetes.io/docs/concepts/services-networking/ingress/" class="bare">https://kubernetes.io/docs/concepts/services-networking/ingress/</a> - ingress controller</p>
+</div>
+<div class="paragraph">
+<p><a href="https://metallb.universe.tf" class="bare">https://metallb.universe.tf</a> - metallb</p>
 </div>
 </div>
 </div>

@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="generator" content="Asciidoctor 2.0.17">
-<title>Steps to Integrate Gitlab with Jenkins</title>
+<title>Configure Prettier and ESLint for Angular</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700">
 <style>
 /*! Asciidoctor default stylesheet | MIT License | https://asciidoctor.org */
@@ -439,286 +439,272 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 </head>
 <body class="article">
 <div id="header">
+<h1>Configure Prettier and ESLint for Angular</h1>
 <div id="toc" class="toc">
 <div id="toctitle">Table of Contents</div>
 <ul class="sectlevel1">
-<li><a href="#_steps_to_integrate_gitlab_with_jenkins">Steps to Integrate Gitlab with Jenkins</a>
-<ul class="sectlevel2">
-<li><a href="#_jenkins_server_configuration">Jenkins Server configuration</a></li>
-<li><a href="#_jenkins_to_gitlab_clone_authentication">Jenkins-to-Gitlab Clone AUthentication</a></li>
-</ul>
-</li>
+<li><a href="#_install_and_configure_eslint">Install and configure ESLint</a></li>
+<li><a href="#_install_and_configure_prettier">Install and configure Prettier</a></li>
+<li><a href="#_integrate_prettier_with_eslint_plugin">Integrate Prettier with ESLint plugin.</a></li>
+<li><a href="#_enable_prettier_for_html_and_typescript_in_vs_code">Enable Prettier for HTML and typescript in <code>VS Code</code>.</a></li>
 </ul>
 </div>
 </div>
 <div id="content">
 <div class="sect1">
-<h2 id="_steps_to_integrate_gitlab_with_jenkins"><a class="anchor" href="#_steps_to_integrate_gitlab_with_jenkins"></a>Steps to Integrate Gitlab with Jenkins</h2>
+<h2 id="_install_and_configure_eslint"><a class="anchor" href="#_install_and_configure_eslint"></a>Install and configure ESLint</h2>
 <div class="sectionbody">
-<div class="sect2">
-<h3 id="_jenkins_server_configuration"><a class="anchor" href="#_jenkins_server_configuration"></a>Jenkins Server configuration</h3>
-<div class="sect3">
-<h4 id="_install_plugins"><a class="anchor" href="#_install_plugins"></a>Install Plugins</h4>
-<div class="ulist">
-<ul>
+<div class="olist arabic">
+<ol class="arabic">
 <li>
-<p>Goto <code>Manage Jenkins</code> &#8594; <code>Manage Plguins</code> &#8594; <code>Available Tab</code> and install following plugins.</p>
-<div class="ulist">
-<ul>
-<li>
-<p>Violation Comments to GitLab</p>
-</li>
-<li>
-<p>GitLab</p>
-</li>
-<li>
-<p>Blue Ocean</p>
-</li>
-<li>
-<p>Common API for Blue Ocean</p>
-</li>
-<li>
-<p>Config API for Blue Ocean</p>
-</li>
-<li>
-<p>Dashboard for Blue Ocean</p>
-</li>
-<li>
-<p>Events API for Blue Ocean</p>
-</li>
-<li>
-<p>Git Pipeline for Blue Ocean</p>
-</li>
-<li>
-<p>JWT for Blue Ocean</p>
-</li>
-<li>
-<p>Personalization for Blue Ocean</p>
-</li>
-<li>
-<p>Pipeline implementation for Blue Ocean</p>
-</li>
-<li>
-<p>REST API for Blue Ocean</p>
-</li>
-<li>
-<p>REST Implementation for Blue Ocean</p>
-</li>
-<li>
-<p>Web for Blue Ocean</p>
-</li>
-<li>
-<p>Blue Ocean Pipeline Editor</p>
-</li>
-<li>
-<p>Blue Ocean Executor Info</p>
-</li>
-<li>
-<p>Pipeline SCM API for Blue Ocean</p>
-</li>
-<li>
-<p>docker</p>
-</li>
-<li>
-<p>HTML Publisher</p>
-</li>
-<li>
-<p>Pipeline Utility Steps</p>
-</li>
-</ul>
-</div>
-</li>
-</ul>
-</div>
-</div>
-<div class="sect3">
-<h4 id="_create_user_for_gitlab"><a class="anchor" href="#_create_user_for_gitlab"></a>Create User for Gitlab</h4>
-<div class="paragraph">
-<p>We need to create a user in Jenkins, such that when a JOBs executed by this user, when JOB is triggered by Webhooks from Gitlab.</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>Goto <code>Manager Jenkins</code> &#8594; <code>Manage Users</code> &#8594; <code>Create User</code> and add user details.</p>
-</li>
-</ul>
-</div>
-</div>
-<div class="sect3">
-<h4 id="_jenkins_to_gitlab_authentication"><a class="anchor" href="#_jenkins_to_gitlab_authentication"></a>Jenkins-to-GitLab authentication</h4>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-note" title="Note"></i>
-</td>
-<td class="content">
-This auth configuration is only used for accessing the GitLab API for sending build status to GitLab. It is not used for cloning git repos. The credentials for cloning (usually SSH credentials) should be configured separately, in the git plugin. This plugin can be configured to send build status messages to GitLab, which show up in the GitLab Merge Request UI. To enable this functionality:
-</td>
-</tr>
-</table>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>Create a new user in GitLab</p>
-</li>
-<li>
-<p>Give this user 'Developer' permissions on each repo you want Jenkins to send build status to</p>
-</li>
-<li>
-<p>Log in or 'Impersonate' that user in GitLab, click the user&#8217;s icon/avatar and choose Settings</p>
-</li>
-<li>
-<p>Click on 'Access Tokens'</p>
-</li>
-<li>
-<p>Create a token named e.g. 'jenkins' with 'api' scope; expiration is optional</p>
-</li>
-<li>
-<p>Copy the token immediately, it cannot be accessed after you leave this page</p>
-</li>
-<li>
-<p>On the Global Configuration page in Jenkins, in the GitLab configuration section, supply the GitLab host URL, e.g. <a href="http://your.gitlab.server" class="bare">http://your.gitlab.server</a></p>
-</li>
-<li>
-<p>Click the 'Add' button to add a credential, choose 'GitLab API token' as the kind of credential, and paste your GitLab user&#8217;s API key into the 'API token' field</p>
-</li>
-<li>
-<p>Click the 'Test Connection' button; it should succeed.</p>
-</li>
-</ul>
-</div>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_jenkins_to_gitlab_clone_authentication"><a class="anchor" href="#_jenkins_to_gitlab_clone_authentication"></a>Jenkins-to-Gitlab Clone AUthentication</h3>
-<div class="paragraph">
-<p>We need to Add SSH key to enable Jenkins to clone repositories.</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>Generate SSH public/private key using below command</p>
+<p>Add <code>eslint</code> using angular schematics.</p>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-sh" data-lang="sh">$ ssh-keygen -t rsa</code></pre>
+<pre class="highlight"><code class="language-shell" data-lang="shell">$ ng add @angular-eslint/schematics</code></pre>
 </div>
 </div>
 </li>
 <li>
-<p>Goto <code>Manage Jenkins</code> &#8594; <code>Configure Credentials</code> &#8594; <code>Credentials</code> &#8594; ` System` &#8594; <code>Global Credentials</code> &#8594; <code>Add Credentials</code></p>
-</li>
-<li>
-<p>Select Kind as <code>ssh username with private key</code></p>
-</li>
-<li>
-<p>Set the username generate in previous section.</p>
-</li>
-<li>
-<p>Set <code>ID</code></p>
-</li>
-<li>
-<p>Select option <code>private key enter directly</code> and add key from <code>cat ~/.ssh/id_rsa</code></p>
-</li>
-<li>
-<p>Provide pass phrase if you&#8217;ve added</p>
-</li>
-<li>
-<p>And click ok</p>
-</li>
-<li>
-<p>Now login to Gitlab with user created in previous section.</p>
-</li>
-<li>
-<p>On Top right corner click on User Avatar &#8594; Settings and then on 'SSH Keys'.</p>
-</li>
-<li>
-<p>Add the public key from output of <code>cat ~/.ssh/id_rsa/pub</code></p>
-</li>
-</ul>
-</div>
-<div class="sect3">
-<h4 id="_create_project_and_configure_project_settings_in_gitlab"><a class="anchor" href="#_create_project_and_configure_project_settings_in_gitlab"></a>Create Project and configure project settings in Gitlab.</h4>
-<div class="ulist">
-<ul>
-<li>
-<p>Now create a sample Project with Jenkinsfile in Gitlab.</p>
+<p>To find out lint issues run below command</p>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-Jenkinsfile" data-lang="Jenkinsfile">pipeline {
-    agent any
-
-    stages {
-        stage('Hello') {
-
-            steps {
-                echo "Hello from Jenkins pipeline"
-            }
-
-        }
-    }
+<pre class="highlight"><code class="language-shell" data-lang="shell">$ ng lint</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>To fix all the fixable bugs in the project.</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-shell" data-lang="shell">$ ng lint --fix</code></pre>
+</div>
+</div>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_install_and_configure_prettier"><a class="anchor" href="#_install_and_configure_prettier"></a>Install and configure Prettier</h2>
+<div class="sectionbody">
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Install Prettier</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-shell" data-lang="shell">$ yarn add prettier -D</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Add <code>.prettierignore</code> file with following content.</p>
+<div class="listingblock">
+<div class="title">.prettierignore</div>
+<div class="content">
+<pre class="highlight"><code>package.json
+CHANGELOG.md
+README.md</code></pre>
+</div>
+</div>
+<div class="dlist">
+<dl>
+<dt class="hdlist1">TIP</dt>
+<dd>
+<p>Inside <code>.prettierignore</code> it’s better to add whatever we have inside <code>.gitignore</code> file.</p>
+</dd>
+</dl>
+</div>
+</li>
+<li>
+<p>Add <code>.prettierrc</code> file with following content.</p>
+<div class="listingblock">
+<div class="title">.prettierrc</div>
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+  "arrow-body-style": "off",
+  "prefer-arrow-callback": "off",
+  "printWidth": 120,
+  "singleQuote": true,
+  "trailingComma": "none",
+  "endOfLine": "auto",
+  "useTabs": false,
+  "bracketSameLine": true,
+  "arrowParens": "avoid",
+  "bracketSpacing": true
 }</code></pre>
 </div>
 </div>
 </li>
 <li>
-<p>Add Build User to the project with role <code>Developer</code></p>
-</li>
-<li>
-<p>Goto Jenkins Server and create new multibranch project say <code>k-sample-ci-project</code></p>
-</li>
-<li>
-<p>In Branch Sources section select <code>Git</code></p>
-</li>
-<li>
-<p>Provide the git clone URL of the Gitlab project. <code>git@localhost:k-projects/sample-ci-project.git</code></p>
-</li>
-<li>
-<p>Select Credentials as Git SSH User added in previous section.</p>
-</li>
-<li>
-<p>Click Save</p>
-</li>
-</ul>
+<p>Run the below command to format project.</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-shell" data-lang="shell">$ npx prettier --write</code></pre>
 </div>
 </div>
-<div class="sect3">
-<h4 id="_adding_webhook"><a class="anchor" href="#_adding_webhook"></a>Adding Webhook.</h4>
-<div class="ulist">
-<ul>
-<li>
-<p>Log in as that user (this is required even if you are a Jenkins admin user), then click on the user&#8217;s name in the top right corner of the page</p>
 </li>
-<li>
-<p>Click <code>Configure</code> &#8594; <code>API Token</code> &#8594; <code>Add new Token</code> then 'generate', and note/copy the User ID and API Token</p>
-</li>
-<li>
-<p>Now goto Gitlab Project &#8594; <code>settings</code> &#8594; <code>Integration</code>  add the webhook <code><a href="http://localhost:8182/project/&lt;jenkins_project_name&gt" class="bare">http://localhost:8182/project/&lt;jenkins_project_name&gt</a>;</code>,  and api token from previous step. click the 'Test' button, and it should succeed and trigger a JOB.</p>
-</li>
-</ul>
+</ol>
 </div>
-<div class="admonitionblock warning">
+</div>
+</div>
+<div class="sect1">
+<h2 id="_integrate_prettier_with_eslint_plugin"><a class="anchor" href="#_integrate_prettier_with_eslint_plugin"></a>Integrate Prettier with ESLint plugin.</h2>
+<div class="sectionbody">
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>Install prettier and eslint plugin.</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-shell" data-lang="shell">$ yarn add prettier-eslint eslint-config-prettier eslint-plugin-prettier -D</code></pre>
+</div>
+</div>
+</li>
+<li>
+<p>Edit the .eslintrc.json file to include the prettier plugin.</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+  "root": true,
+  "ignorePatterns": [
+    "projects/**/*"
+  ],
+  "overrides": [
+    {
+      "files": [
+        "*.ts"
+      ],
+      "parserOptions": {
+        "project": [
+          "tsconfig.json"
+        ],
+        "createDefaultProgram": true
+      },
+      "extends": [
+        "plugin:@angular-eslint/recommended",
+        "plugin:@angular-eslint/template/process-inline-templates",
+        "plugin:prettier/recommended" <i class="conum" data-value="1"></i><b>(1)</b>
+      ],
+      "rules": {
+        "@angular-eslint/directive-selector": [
+          "error",
+          {
+            "type": "attribute",
+            "prefix": "k",
+            "style": "camelCase"
+          }
+        ],
+        "@angular-eslint/component-selector": [
+          "error",
+          {
+            "type": "element",
+            "prefix": "k",
+            "style": "kebab-case"
+          }
+        ],
+        <i class="conum" data-value="2"></i><b>(2)</b>
+        "sort-imports": [
+          "error",
+          {
+            "ignoreCase": false,
+            "ignoreDeclarationSort": false,
+            "ignoreMemberSort": false,
+            "memberSyntaxSortOrder": ["none", "all", "multiple", "single"],
+            "allowSeparatedGroups": true
+          }
+        ]
+        <i class="conum" data-value="3"></i><b>(3)</b>
+      }
+    },
+    {
+      "files": [
+        "*.html"
+      ],
+      "extends": [
+        "plugin:@angular-eslint/template/recommended"
+      ],
+      "rules": {}
+    },
+    <i class="conum" data-value="4"></i><b>(4)</b>
+    {
+      "files": ["*.html"],
+      "excludedFiles": ["*inline-template-*.component.html"],
+      "extends": ["plugin:prettier/recommended"],
+      "rules": {
+        "prettier/prettier": ["error", { "parser": "angular" }]
+      }
+    }
+    <i class="conum" data-value="5"></i><b>(5)</b>
+  ]
+}</code></pre>
+</div>
+</div>
+<div class="colist arabic">
 <table>
 <tr>
-<td class="icon">
-<i class="fa icon-warning" title="Warning"></i>
-</td>
-<td class="content">
-To prevent this type of exploitation from happening, starting with GitLab 10.6, all Webhook requests to the current GitLab instance server address and/or in a private network will be forbidden by default. That means that all requests made to 127.0.0.1, ::1 and 0.0.0.0, as well as IPv4 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16 and IPv6 site-local (ffc0::/10) addresses won’t be allowed.<br>
-This behavior can be overridden by enabling the option “Allow requests to the local network from hooks and services” in the “Outbound requests” section inside the Admin area under Settings (<code>/admin/application_settings/network</code>)
-</td>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Add plugin</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="2"></i><b>2</b></td>
+<td>Add additional import rule start.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="3"></i><b>3</b></td>
+<td>Add additional import rule end.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="4"></i><b>4</b></td>
+<td>Start of html rule configuration.</td>
+</tr>
+<tr>
+<td><i class="conum" data-value="5"></i><b>5</b></td>
+<td>Enad of html rule configuration.</td>
 </tr>
 </table>
 </div>
+</li>
+</ol>
 </div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="_enable_prettier_for_html_and_typescript_in_vs_code"><a class="anchor" href="#_enable_prettier_for_html_and_typescript_in_vs_code"></a>Enable Prettier for HTML and typescript in <code>VS Code</code>.</h2>
+<div class="sectionbody">
+<div class="ulist">
+<ul>
+<li>
+<p>Create/update <code>.vscode/settings.json</code> file to use <code>prettier</code> formatter for html and typescripts.</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+  "[html]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.codeActionsOnSave": {
+      "source.fixAll.eslint": true
+    },
+    "editor.formatOnSave": false
+  },
+  "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.codeActionsOnSave": {
+      "source.fixAll.eslint": true
+    },
+    "editor.formatOnSave": false
+  },
+}</code></pre>
+</div>
+</div>
+</li>
+</ul>
 </div>
 </div>
 </div>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2022-07-30 16:01:06 +0530
+Last updated 2022-08-01 21:15:23 +0530
 </div>
 </div>
 </body>

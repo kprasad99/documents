@@ -1,0 +1,192 @@
+= Configure Prettier and ESLint for Angular
+
+== Install and configure ESLint
+
+. Add `eslint` using angular schematics.
++
+[source,shell]
+----
+$ ng add @angular-eslint/schematics
+----
+
+. To find out lint issues run below command
++
+[source,shell]
+----
+$ ng lint
+----
+
+. To fix all the fixable bugs in the project.
++
+[source,shell]
+----
+$ ng lint --fix
+----
+
+== Install and configure Prettier
+
+. Install Prettier
++
+[source,shell]
+----
+$ yarn add prettier -D
+----
+
+. Add `.prettierignore` file with following content.
++
+..prettierignore
++
+[source]
+----
+package.json
+CHANGELOG.md
+README.md
+----
++
+TIP:: Inside `.prettierignore` it’s better to add whatever we have inside `.gitignore` file.
+
+. Add `.prettierrc` file with following content.
++
+..prettierrc
+[source,json]
+----
+{
+  "arrow-body-style": "off",
+  "prefer-arrow-callback": "off",
+  "printWidth": 120,
+  "singleQuote": true,
+  "trailingComma": "none",
+  "endOfLine": "auto",
+  "useTabs": false,
+  "bracketSameLine": true,
+  "arrowParens": "avoid",
+  "bracketSpacing": true
+}
+
+----
+
+. Run the below command to format project.
++
+[source,shell]
+----
+$ npx prettier --write
+----
+
+
+== Integrate Prettier with ESLint plugin.
+
+. Install prettier and eslint plugin.
++
+[source,shell]
+----
+$ yarn add prettier-eslint eslint-config-prettier eslint-plugin-prettier -D
+----
+
+. Edit the .eslintrc.json file to include the prettier plugin.
++
+[source,json]
+----
+{
+  "root": true,
+  "ignorePatterns": [
+    "projects/**/*"
+  ],
+  "overrides": [
+    {
+      "files": [
+        "*.ts"
+      ],
+      "parserOptions": {
+        "project": [
+          "tsconfig.json"
+        ],
+        "createDefaultProgram": true
+      },
+      "extends": [
+        "plugin:@angular-eslint/recommended",
+        "plugin:@angular-eslint/template/process-inline-templates",
+        "plugin:prettier/recommended" // <1>
+      ],
+      "rules": {
+        "@angular-eslint/directive-selector": [
+          "error",
+          {
+            "type": "attribute",
+            "prefix": "k",
+            "style": "camelCase"
+          }
+        ],
+        "@angular-eslint/component-selector": [
+          "error",
+          {
+            "type": "element",
+            "prefix": "k",
+            "style": "kebab-case"
+          }
+        ],
+        // <2>
+        "sort-imports": [
+          "error",
+          {
+            "ignoreCase": false,
+            "ignoreDeclarationSort": false,
+            "ignoreMemberSort": false,
+            "memberSyntaxSortOrder": ["none", "all", "multiple", "single"],
+            "allowSeparatedGroups": true
+          }
+        ]
+        // <3>
+      }
+    },
+    {
+      "files": [
+        "*.html"
+      ],
+      "extends": [
+        "plugin:@angular-eslint/template/recommended"
+      ],
+      "rules": {}
+    },
+    // <4>
+    {
+      "files": ["*.html"],
+      "excludedFiles": ["*inline-template-*.component.html"],
+      "extends": ["plugin:prettier/recommended"],
+      "rules": {
+        "prettier/prettier": ["error", { "parser": "angular" }]
+      }
+    }
+    // <5>
+  ]
+}
+
+----
+<1> Add plugin
+<2> Add additional import rule start.
+<3> Add additional import rule end.
+<4> Start of html rule configuration.
+<5> Enad of html rule configuration.
+
+== Enable Prettier for HTML and typescript in `VS Code`.
+
+- Create/update `.vscode/settings.json` file to use `prettier` formatter for html and typescripts.
++
+[source,json]
+----
+{
+  "[html]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.codeActionsOnSave": {
+      "source.fixAll.eslint": true
+    },
+    "editor.formatOnSave": false
+  },
+  "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.codeActionsOnSave": {
+      "source.fixAll.eslint": true
+    },
+    "editor.formatOnSave": false
+  },
+}
+----

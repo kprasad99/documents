@@ -49,7 +49,7 @@ ansible --version
 
 //end::installAnsible[]
 
-=== (Optional) Install openstack client
+== (Optional) Install openstack client
 
 Since my VMs are provisioned using openstack, installing openstack client on ansible server
 
@@ -83,9 +83,9 @@ export OS_IMAGE_API_VERSION=2
 source openrc
 ```
 
-=== Run sample playbook
+== Run sample playbook
 
-==== Setup SSH login
+=== Setup SSH login
 
 You can skip this step if you are using VM provisioned by openstack and have
 passed keypair while creating VM.
@@ -107,7 +107,7 @@ $ ssh-copy-id -i ~/.ssh/id_ed25519.pub kp@192.168.56.20
 $ ssh kp@192.168.56.20
 ```
 
-==== Inventory configuration
+=== Inventory configuration
 
 . Create inventory yaml file, to list all the servers that to be managed/used by anisble.
 +
